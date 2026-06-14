@@ -26,12 +26,17 @@ export default function AccueilPage({ ben, onNavigate }) {
     <div className="page-content">
       {/* Hero card */}
       <div style={{ background: 'var(--navy)', padding: '20px 16px', marginBottom: 12 }}>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', marginBottom: 4 }}>
-          Bonjour 👋
-        </p>
-        <h1 style={{ color: 'white', fontSize: '1.4rem' }}>
-          {ben.prenom} {ben.nom}
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          <img src="/pcgi-logo.jpg" alt="PCGI 87" style={{ width: '56px', height: '56px', borderRadius: '8px' }} />
+          <div>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', marginBottom: 4 }}>
+              Bonjour 👋
+            </p>
+            <h1 style={{ color: 'white', fontSize: '1.4rem', margin: 0 }}>
+              {ben.prenom} {ben.nom}
+            </h1>
+          </div>
+        </div>
         <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span className={`badge ${statusBadgeClass(ben.statut)}`}>{ben.statut}</span>
           <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem' }}>
