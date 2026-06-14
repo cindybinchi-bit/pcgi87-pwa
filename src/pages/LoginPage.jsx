@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { load, save, STORAGE_KEYS, STRUCTURE_NAMES, DEMO_BEN } from '../utils/storage.js';
+import { getBeneficiaries, initFirebase } from '../firebase-service.js';
 
 export default function LoginPage({ onLogin }) {
   const [structureId, setStructureId] = useState('struct_001');
@@ -8,7 +9,7 @@ export default function LoginPage({ onLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     if (!nom.trim() || !code.trim()) {
@@ -17,9 +18,19 @@ export default function LoginPage({ onLogin }) {
     }
     setLoading(true);
 
-    setTimeout(() => {
-      const allBenefs = load(STORAGE_KEYS.beneficiaires, {});
-      const list = allBenefs[structureId] || [];
+    try {
+      // Initialiser Firebase
+      await initFirebase();
+
+      // Charger les bénéficiaires depuis Firebase
+      let list = [];
+      try {
+        list = await getBeneficiaries(structureId);
+      } catch (err) {
+        console.warn('Firebase non disponible, chargement depuis localStorage', err);
+        const allBenefs = load(STORAGE_KEYS.beneficiaires, {});
+        list = allBenefs[structureId] || [];
+      }
 
       let found = list.find(b => {
         const full = `${b.prenom || ''} ${b.nom || ''}`.trim().toLowerCase();
@@ -41,7 +52,11 @@ export default function LoginPage({ onLogin }) {
       save(STORAGE_KEYS.session, session);
       onLogin({ ...found, structureId });
       setLoading(false);
-    }, 400);
+    } catch (err) {
+      console.error('Erreur lors de la connexion:', err);
+      setError('Erreur de connexion. Vérifiez votre nom et code.');
+      setLoading(false);
+    }
   }
 
   return (
