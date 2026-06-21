@@ -1,44 +1,55 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { load, save, STORAGE_KEYS, formatDateTime } from './storage.js';
+import React, { useState, useRef, useEffect } from 'react';
+import { formatDateTime } from './storage.js';
+import {
+  initFirebase,
+  getBeneficiaryConversationId,
+  sendBeneficiaryMessage,
+  onMessagesChange,
+  markMessagesAsReadByBeneficiary,
+} from './firebase-service.js';
 import { Send, MessageSquareOff } from 'lucide-react';
 
-function uid() {
-  return `bmsg_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`;
-}
-
 export default function MessagesPage({ ben }) {
-  const [messages, setMessages] = useState(() => {
-    const chats = load(STORAGE_KEYS.chats, {});
-    return chats?.beneficiaryConversations?.[ben.id] || [];
-  });
+  const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+  const conversationId = getBeneficiaryConversationId(ben.id);
+
+  // Écoute en temps réel les messages depuis Firestore, et marque
+  // automatiquement comme lus les messages du référent à l'ouverture.
+  useEffect(() => {
+    let unsub = () => {};
+    initFirebase()
+      .then(() => {
+        unsub = onMessagesChange(conversationId, (list) => {
+          setMessages(list);
+        });
+        markMessagesAsReadByBeneficiary(conversationId).catch((err) =>
+          console.warn('Accusé de lecture bénéficiaire :', err)
+        );
+      })
+      .catch((err) => console.warn('Firebase non disponible :', err));
+    return () => unsub();
+  }, [conversationId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  function handleSend() {
+  async function handleSend() {
     const msg = text.trim();
-    if (!msg) return;
-
-    const newMsg = {
-      id: uid(),
-      createdAt: new Date().toISOString(),
-      authorId: ben.id,
-      authorName: `${ben.prenom} ${ben.nom}`,
-      text: msg,
-    };
-
-    const chats = load(STORAGE_KEYS.chats, { channels: {}, directConversations: {}, beneficiaryConversations: {} });
-    if (!chats.beneficiaryConversations) chats.beneficiaryConversations = {};
-    const list = [...(chats.beneficiaryConversations[ben.id] || []), newMsg];
-    chats.beneficiaryConversations[ben.id] = list;
-    save(STORAGE_KEYS.chats, chats);
-    setMessages(list);
-    setText('');
-    textareaRef.current?.focus();
+    if (!msg || sending) return;
+    setSending(true);
+    try {
+      await sendBeneficiaryMessage(conversationId, ben, msg);
+      setText('');
+      textareaRef.current?.focus();
+    } catch (err) {
+      console.error('Erreur envoi message :', err);
+    }
+    setSending(false);
   }
 
   function handleKey(e) {
@@ -66,15 +77,20 @@ export default function MessagesPage({ ben }) {
       ) : (
         <div className="msg-thread" style={{ padding: '12px 0' }}>
           {messages.map((m, i) => {
-            const isMine = m.authorId === ben.id;
+            const isMine = m.authorType === 'beneficiary';
             return (
               <div key={m.id || i} className="msg-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
                 <div className="bubble-meta" style={{ textAlign: isMine ? 'right' : 'left' }}>
                   {isMine ? 'Moi' : 'Mon référent'} · {formatDateTime(m.createdAt)}
                 </div>
                 <div className={`bubble ${isMine ? 'sent' : 'received'}`}>
-                  {m.text}
+                  {m.content}
                 </div>
+                {isMine ? (
+                  <div style={{ fontSize: '0.68rem', color: m.readAt ? '#0e9f6e' : '#94a3b8', marginTop: 2 }}>
+                    {m.readAt ? '✓✓ Lu' : '✓ Envoyé'}
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -92,7 +108,7 @@ export default function MessagesPage({ ben }) {
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKey}
         />
-        <button className="send-btn" onClick={handleSend} disabled={!text.trim()} aria-label="Envoyer">
+        <button className="send-btn" onClick={handleSend} disabled={!text.trim() || sending} aria-label="Envoyer">
           <Send size={18} />
         </button>
       </div>
