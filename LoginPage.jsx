@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { load, save, STORAGE_KEYS, STRUCTURE_NAMES, DEMO_BEN } from './storage.js';
 import { getBeneficiaries, initFirebase } from './firebase-service.js';
 
@@ -8,6 +8,22 @@ export default function LoginPage({ onLogin }) {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inviteMode, setInviteMode] = useState(false);
+  const [inviteBeneficiaryId, setInviteBeneficiaryId] = useState(null);
+
+  // Détecter un lien d'invitation dans l'URL : ?invite=xxx&benId=yyy&structId=zzz
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const benId = params.get('benId');
+    const structId = params.get('structId');
+    const inviteId = params.get('invite');
+
+    if (inviteId && benId && structId) {
+      setStructureId(structId);
+      setInviteBeneficiaryId(benId);
+      setInviteMode(true);
+    }
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -68,16 +84,29 @@ export default function LoginPage({ onLogin }) {
       </div>
 
       <div className="login-card">
-        <div className="login-hint">
-          💡 Connectez-vous avec les identifiants fournis par votre référent(e).
-        </div>
+        {inviteMode ? (
+          <div className="login-hint">
+            🎉 Vous avez été invité(e) à rejoindre votre espace personnel !<br />
+            Connectez-vous avec le <strong>code temporaire</strong> fourni par votre référent(e),
+            vous pourrez ensuite choisir votre propre code.
+          </div>
+        ) : (
+          <div className="login-hint">
+            💡 Connectez-vous avec les identifiants fournis par votre référent(e).
+          </div>
+        )}
 
         {error && <div className="error-box">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-field">
             <label htmlFor="struct">Votre structure</label>
-            <select id="struct" value={structureId} onChange={e => setStructureId(e.target.value)}>
+            <select
+              id="struct"
+              value={structureId}
+              onChange={e => setStructureId(e.target.value)}
+              disabled={inviteMode}
+            >
               {Object.entries(STRUCTURE_NAMES).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
@@ -114,9 +143,11 @@ export default function LoginPage({ onLogin }) {
           </button>
         </form>
 
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', textAlign: 'center', marginTop: 16 }}>
-          Démo : entrez n'importe quel nom + code <strong>PCGI87!</strong>
-        </p>
+        {!inviteMode && (
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', textAlign: 'center', marginTop: 16 }}>
+            Démo : entrez n'importe quel nom + code <strong>PCGI87!</strong>
+          </p>
+        )}
       </div>
     </div>
   );
