@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, onSnapshot } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, onSnapshot } from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -18,10 +18,18 @@ export function initFirebase() {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
   auth = getAuth(app);
+  // Connexion anonyme pour les lectures/écritures
   return signInAnonymously(auth);
 }
 
-// Lecture des bénéficiaires
+// Bénéficiaires
+export async function addBeneficiary(structureId, beneficiary) {
+  return addDoc(collection(db, 'structures', structureId, 'beneficiaires'), {
+    ...beneficiary,
+    createdAt: new Date().toISOString(),
+  });
+}
+
 export async function getBeneficiaries(structureId) {
   const snapshot = await getDocs(collection(db, 'structures', structureId, 'beneficiaires'));
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -34,7 +42,22 @@ export function onBeneficiariesChange(structureId, callback) {
   });
 }
 
-// Lecture des activités
+export async function updateBeneficiary(structureId, beneficiaryId, data) {
+  return updateDoc(doc(db, 'structures', structureId, 'beneficiaires', beneficiaryId), data);
+}
+
+export async function deleteBeneficiary(structureId, beneficiaryId) {
+  return deleteDoc(doc(db, 'structures', structureId, 'beneficiaires', beneficiaryId));
+}
+
+// Activités
+export async function addActivity(structureId, activity) {
+  return addDoc(collection(db, 'structures', structureId, 'activities'), {
+    ...activity,
+    createdAt: new Date().toISOString(),
+  });
+}
+
 export async function getActivities(structureId) {
   const snapshot = await getDocs(collection(db, 'structures', structureId, 'activities'));
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -47,10 +70,20 @@ export function onActivitiesChange(structureId, callback) {
   });
 }
 
-// Lecture de l'agenda
-export async function getAgendaEvents(structureId) {
-  const snapshot = await getDocs(collection(db, 'structures', structureId, 'agendas'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+export async function updateActivity(structureId, activityId, data) {
+  return updateDoc(doc(db, 'structures', structureId, 'activities', activityId), data);
+}
+
+export async function deleteActivity(structureId, activityId) {
+  return deleteDoc(doc(db, 'structures', structureId, 'activities', activityId));
+}
+
+// Agendas
+export async function addAgendaEvent(structureId, event) {
+  return addDoc(collection(db, 'structures', structureId, 'agendas'), {
+    ...event,
+    createdAt: new Date().toISOString(),
+  });
 }
 
 export function onAgendaChange(structureId, callback) {
@@ -58,6 +91,10 @@ export function onAgendaChange(structureId, callback) {
     const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(events);
   });
+}
+
+export async function deleteAgendaEvent(structureId, eventId) {
+  return deleteDoc(doc(db, 'structures', structureId, 'agendas', eventId));
 }
 
 export { db, auth };
