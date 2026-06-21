@@ -1,88 +1,175 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import React, { useState, useEffect } from 'react';
+import { load, save, STORAGE_KEYS, STRUCTURE_NAMES, DEMO_BEN } from './storage.js';
+import { getBeneficiaries, getStructures, initFirebase } from './firebase-service.js';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDBEvh1e3M7XwfgMxFIEO0PcZydC8kliSg",
-  authDomain: "pcgi87.firebaseapp.com",
-  projectId: "pcgi87",
-  storageBucket: "pcgi87.firebasestorage.app",
-  messagingSenderId: "242979251003",
-  appId: "1:242979251003:web:62b4991835d5ef3e018d1e",
-  measurementId: "G-YT3000GR76"
-};
+export default function LoginPage({ onLogin }) {
+  const [structureId, setStructureId] = useState('struct_001');
+  const [structuresList, setStructuresList] = useState(
+    Object.entries(STRUCTURE_NAMES).map(([id, nom]) => ({ id, nom }))
+  );
+  const [nom, setNom] = useState('');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [inviteMode, setInviteMode] = useState(false);
+  const [inviteBeneficiaryId, setInviteBeneficiaryId] = useState(null);
 
-let app, db, auth;
+  // Charger la liste des structures depuis Firestore (dynamique, synchronisée
+  // avec l'app principale — toute nouvelle structure apparaît automatiquement)
+  useEffect(() => {
+    initFirebase()
+      .then(() => getStructures())
+      .then((list) => {
+        if (list && list.length > 0) {
+          const formatted = list
+            .map((s) => ({ id: s.id, nom: s.ville ? `${s.nom} — ${s.ville}` : s.nom }))
+            .sort((a, b) => a.nom.localeCompare(b.nom));
+          setStructuresList(formatted);
+        }
+      })
+      .catch((err) => {
+        console.warn('Impossible de charger les structures depuis Firebase, utilisation de la liste locale.', err);
+      });
+  }, []);
 
-export function initFirebase() {
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  auth = getAuth(app);
-  return signInAnonymously(auth);
+  // Détecter un lien d'invitation dans l'URL : ?invite=xxx&benId=yyy&structId=zzz
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const benId = params.get('benId');
+    const structId = params.get('structId');
+    const inviteId = params.get('invite');
+
+    if (inviteId && benId && structId) {
+      setStructureId(structId);
+      setInviteBeneficiaryId(benId);
+      setInviteMode(true);
+    }
+  }, []);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    if (!nom.trim() || !code.trim()) {
+      setError('Veuillez renseigner votre nom et votre code d\'accès.');
+      return;
+    }
+    setLoading(true);
+
+    try {
+      // Initialiser Firebase
+      await initFirebase();
+
+      // Charger les bénéficiaires depuis Firebase
+      let list = [];
+      try {
+        list = await getBeneficiaries(structureId);
+      } catch (err) {
+        console.warn('Firebase non disponible, chargement depuis localStorage', err);
+        const allBenefs = load(STORAGE_KEYS.beneficiaires, {});
+        list = allBenefs[structureId] || [];
+      }
+
+      let found = list.find(b => {
+        const full = `${b.prenom || ''} ${b.nom || ''}`.trim().toLowerCase();
+        return full === nom.trim().toLowerCase() && (b.accessCode || 'PCGI87!') === code.trim();
+      });
+
+      if (!found && code.trim() === 'PCGI87!') {
+        // Mode démo
+        found = { ...DEMO_BEN, structureId };
+      }
+
+      if (!found) {
+        setError('Identifiants incorrects. Contactez votre référent(e) si vous avez oublié votre code.');
+        setLoading(false);
+        return;
+      }
+
+      const session = { benId: found.id, structureId, nom: found.nom, prenom: found.prenom, ts: Date.now() };
+      save(STORAGE_KEYS.session, session);
+      onLogin({ ...found, structureId });
+      setLoading(false);
+    } catch (err) {
+      console.error('Erreur lors de la connexion:', err);
+      setError('Erreur de connexion. Vérifiez votre nom et code.');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="login-screen">
+      <div className="login-logo">
+        <img src="/pcgi-logo.jpg" alt="PCGI 87" style={{ width: '108px', height: '108px', marginBottom: '14px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.35)' }} />
+        <h1>Mon Espace</h1>
+        <p>Portail bénéficiaire · PCGI 87</p>
+      </div>
+
+      <div className="login-card">
+        {inviteMode ? (
+          <div className="login-hint">
+            🎉 Vous avez été invité(e) à rejoindre votre espace personnel !<br />
+            Connectez-vous avec le <strong>code temporaire</strong> fourni par votre référent(e),
+            vous pourrez ensuite choisir votre propre code.
+          </div>
+        ) : (
+          <div className="login-hint">
+            💡 Connectez-vous avec les identifiants fournis par votre référent(e).
+          </div>
+        )}
+
+        {error && <div className="error-box">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-field">
+            <label htmlFor="struct">Votre structure</label>
+            <select
+              id="struct"
+              value={structureId}
+              onChange={e => setStructureId(e.target.value)}
+              disabled={inviteMode}
+            >
+              {structuresList.map((s) => (
+                <option key={s.id} value={s.id}>{s.nom}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="nom">Nom et prénom</label>
+            <input
+              id="nom"
+              type="text"
+              placeholder="Ex : Sophie Martin"
+              value={nom}
+              onChange={e => setNom(e.target.value)}
+              autoComplete="name"
+              autoCapitalize="words"
+            />
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="code">Code d'accès</label>
+            <input
+              id="code"
+              type="password"
+              placeholder="Code fourni par votre référent"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button className="btn btn-primary mt-8" type="submit" disabled={loading}>
+            {loading ? 'Connexion…' : 'Se connecter →'}
+          </button>
+        </form>
+
+        {!inviteMode && (
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', textAlign: 'center', marginTop: 16 }}>
+            Démo : entrez n'importe quel nom + code <strong>PCGI87!</strong>
+          </p>
+        )}
+      </div>
+    </div>
+  );
 }
-
-// Lecture des structures (dynamique, synchronisée avec l'app principale)
-export async function getStructures() {
-  const snapshot = await getDocs(collection(db, 'structures_meta'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-export function onStructuresChange(callback) {
-  return onSnapshot(collection(db, 'structures_meta'), (snapshot) => {
-    const structures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(structures);
-  });
-}
-
-// Lecture des bénéficiaires
-export async function getBeneficiaries(structureId) {
-  const snapshot = await getDocs(collection(db, 'structures', structureId, 'beneficiaires'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-export function onBeneficiariesChange(structureId, callback) {
-  return onSnapshot(collection(db, 'structures', structureId, 'beneficiaires'), (snapshot) => {
-    const beneficiaries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(beneficiaries);
-  });
-}
-
-/**
- * Met à jour le code d'accès du bénéficiaire et désactive le drapeau
- * "première connexion" une fois le nouveau code défini.
- */
-export async function updateBeneficiaryAccessCode(structureId, beneficiaryId, newAccessCode) {
-  const ref = doc(db, 'structures', structureId, 'beneficiaires', beneficiaryId);
-  await updateDoc(ref, {
-    accessCode: newAccessCode,
-    firstLogin: false,
-  });
-}
-
-// Lecture des activités
-export async function getActivities(structureId) {
-  const snapshot = await getDocs(collection(db, 'structures', structureId, 'activities'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-export function onActivitiesChange(structureId, callback) {
-  return onSnapshot(collection(db, 'structures', structureId, 'activities'), (snapshot) => {
-    const activities = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(activities);
-  });
-}
-
-// Lecture de l'agenda
-export async function getAgendaEvents(structureId) {
-  const snapshot = await getDocs(collection(db, 'structures', structureId, 'agendas'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-export function onAgendaChange(structureId, callback) {
-  return onSnapshot(collection(db, 'structures', structureId, 'agendas'), (snapshot) => {
-    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(events);
-  });
-}
-
-export { db, auth };
