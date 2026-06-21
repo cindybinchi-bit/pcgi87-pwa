@@ -78,8 +78,8 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="login-screen">
       <div className="login-logo">
-        <img src="/pcgi-logo.jpg" alt="PCGI 87" style={{ width: '120px', height: '120px', marginBottom: '16px', borderRadius: '12px' }} />
-        <h1>🌿 Mon Espace</h1>
+        <img src="/pcgi-logo.jpg" alt="PCGI 87" style={{ width: '108px', height: '108px', marginBottom: '14px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.35)' }} />
+        <h1>Mon Espace</h1>
         <p>Portail bénéficiaire · PCGI 87</p>
       </div>
 
