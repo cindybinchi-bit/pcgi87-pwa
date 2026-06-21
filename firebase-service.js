@@ -21,6 +21,19 @@ export function initFirebase() {
   return signInAnonymously(auth);
 }
 
+// Lecture des structures (dynamique, synchronisée avec l'app principale)
+export async function getStructures() {
+  const snapshot = await getDocs(collection(db, 'structures_meta'));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export function onStructuresChange(callback) {
+  return onSnapshot(collection(db, 'structures_meta'), (snapshot) => {
+    const structures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(structures);
+  });
+}
+
 // Lecture des bénéficiaires
 export async function getBeneficiaries(structureId) {
   const snapshot = await getDocs(collection(db, 'structures', structureId, 'beneficiaires'));
