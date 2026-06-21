@@ -1,5 +1,18 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  onSnapshot,
+  doc,
+  updateDoc,
+  addDoc,
+  setDoc,
+  query,
+  orderBy,
+  where,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -83,6 +96,81 @@ export function onAgendaChange(structureId, callback) {
     const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(events);
   });
+}
+
+// ─── MESSAGERIE (avec accusé de lecture ✓✓) ────────────────────
+
+/**
+ * Calcule l'identifiant de conversation d'un bénéficiaire — DOIT être
+ * identique au calcul fait côté app principale (basé uniquement sur le
+ * bénéficiaire, peu importe quel professionnel répond).
+ */
+export function getBeneficiaryConversationId(beneficiaryId) {
+  return `benef_conversation_${beneficiaryId}`;
+}
+
+/**
+ * Envoie un message du bénéficiaire vers son référent.
+ */
+export async function sendBeneficiaryMessage(conversationId, beneficiary, content) {
+  await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
+    authorType: 'beneficiary',
+    authorId: beneficiary.id,
+    authorName: `${beneficiary.prenom} ${beneficiary.nom}`.trim(),
+    content,
+    scope: 'beneficiary',
+    createdAt: serverTimestamp(),
+    readAt: null,
+  });
+  await setDoc(doc(db, 'conversations', conversationId), {
+    beneficiaryId: beneficiary.id,
+    beneficiaryName: `${beneficiary.prenom} ${beneficiary.nom}`.trim(),
+    beneficiaryEmail: beneficiary.email || '',
+    structureId: beneficiary.structureId,
+    scope: 'beneficiary',
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+/**
+ * Écoute en temps réel les messages d'une conversation bénéficiaire,
+ * avec leur statut de lecture (readAt).
+ * @returns unsubscribe function
+ */
+export function onMessagesChange(conversationId, callback) {
+  const ref = query(
+    collection(db, 'conversations', conversationId, 'messages'),
+    orderBy('createdAt', 'asc')
+  );
+  return onSnapshot(ref, (snap) => {
+    const list = snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+      createdAt: d.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      readAt: d.data().readAt?.toDate?.()?.toISOString() || null,
+    }));
+    callback(list);
+  }, (err) => console.error('onMessagesChange :', err));
+}
+
+/**
+ * Marque comme lus tous les messages envoyés par le professionnel
+ * (accusé de lecture ✓✓ visible côté app principale).
+ */
+export async function markMessagesAsReadByBeneficiary(conversationId) {
+  try {
+    const ref = collection(db, 'conversations', conversationId, 'messages');
+    const q = query(ref, where('authorType', '==', 'professional'));
+    const snap = await getDocs(q);
+    const updates = snap.docs
+      .filter((d) => !d.data().readAt)
+      .map((d) => updateDoc(doc(db, 'conversations', conversationId, 'messages', d.id), {
+        readAt: serverTimestamp(),
+      }));
+    await Promise.all(updates);
+  } catch (err) {
+    console.error('markMessagesAsReadByBeneficiary :', err);
+  }
 }
 
 export { db, auth };
