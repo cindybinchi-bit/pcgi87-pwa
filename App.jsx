@@ -13,7 +13,12 @@ import { initFCM, onFCMMessage } from './fcm-service.js';
 function Splash() {
   return (
     <div className="splash">
-      <h1>🌿 Mon Espace</h1>
+      <img
+        src="/pcgi-logo.jpg"
+        alt="PCGI 87"
+        style={{ width: '88px', height: '88px', borderRadius: '18px', marginBottom: '14px', boxShadow: '0 10px 30px rgba(0,0,0,0.35)' }}
+      />
+      <h1>Mon Espace</h1>
       <p>PCGI 87</p>
       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
         {[0, 0.2, 0.4].map((delay, i) => (
