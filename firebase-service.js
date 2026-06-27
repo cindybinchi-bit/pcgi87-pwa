@@ -101,12 +101,26 @@ export function onAgendaChange(structureId, callback) {
 // ─── MESSAGERIE (avec accusé de lecture ✓✓) ────────────────────
 
 /**
- * Calcule l'identifiant de conversation d'un bénéficiaire — DOIT être
- * identique au calcul fait côté app principale (basé uniquement sur le
- * bénéficiaire, peu importe quel professionnel répond).
+ * Retourne TOUS les IDs de conversation de ce bénéficiaire dans Firestore
+ * (un bénéficiaire peut avoir plusieurs référents = plusieurs fils).
+ * Si aucune conversation n'existe encore, retourne un tableau vide.
  */
-export function getBeneficiaryConversationId(beneficiaryId) {
-  return `benef_conversation_${beneficiaryId}`;
+export async function getBeneficiaryConversationIds(beneficiaryId) {
+  try {
+    const ref = collection(db, 'conversations');
+    const q = query(ref, where('beneficiaryId', '==', beneficiaryId));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return snap.docs.map((d) => ({
+        id: d.id,
+        referentName: d.data().referentName || 'Référent',
+        referentEmail: d.data().referentEmail || '',
+      }));
+    }
+  } catch (err) {
+    console.warn('Impossible de chercher les conversations existantes:', err);
+  }
+  return [];
 }
 
 /**
