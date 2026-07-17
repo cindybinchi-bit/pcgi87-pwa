@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Structures et sous-collections (bénéficiaires, agendas)
+    match /structures/{structureId}/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Conversations messagerie
+    match /conversations/{conversationId}/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
