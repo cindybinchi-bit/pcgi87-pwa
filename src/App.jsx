@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import LoginPage from './pages/LoginPage.jsx';
 import AccueilPage from './pages/AccueilPage.jsx';
 import AgendaPage from './pages/AgendaPage.jsx';
@@ -6,13 +6,13 @@ import MessagesPage from './pages/MessagesPage.jsx';
 import DocumentsPage from './pages/DocumentsPage.jsx';
 import ProfilPage from './pages/ProfilPage.jsx';
 import BottomNav from './components/BottomNav.jsx';
-import { load, save, STORAGE_KEYS, DEMO_BEN } from './utils/storage.js';
+import { load, save, STORAGE_KEYS } from './utils/storage.js';
 import { initFCM, onFCMMessage } from './fcm-service.js';
 
 function Splash() {
   return (
     <div className="splash">
-      <h1>🌿 Mon Espace</h1>
+      <h1>ðŸŒ¿ Mon Espace</h1>
       <p>PCGI 87</p>
       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
         {[0, 0.2, 0.4].map((delay, i) => (
@@ -33,7 +33,7 @@ export default function App() {
     const timer = setTimeout(() => {
       const session = load(STORAGE_KEYS.session, null);
       if (session && session.benId) {
-        // Tenter de recharger le bénéficiaire depuis le storage principal
+        // Tenter de recharger le bÃ©nÃ©ficiaire depuis le storage principal
         const allBenefs = load(STORAGE_KEYS.beneficiaires, {});
         const structBenefs = allBenefs[session.structureId] || [];
         const found = structBenefs.find(b => b.id === session.benId);
@@ -60,12 +60,12 @@ export default function App() {
     setPage('accueil');
   }
 
-  // Écouter les messages FCM
+  // Ã‰couter les messages FCM
   useEffect(() => {
     if (ben) {
       onFCMMessage((payload) => {
-        console.log('📬 Nouvelle notification:', payload.notification.title);
-        // Afficher une notification visuelle si souhaité
+        console.log('ðŸ“¬ Nouvelle notification:', payload.notification.title);
+        // Afficher une notification visuelle si souhaitÃ©
       });
     }
   }, [ben]);
@@ -92,3 +92,4 @@ export default function App() {
     </div>
   );
 }
+
