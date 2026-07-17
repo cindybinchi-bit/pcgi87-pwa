@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect } from 'react';
-import { load, save, STORAGE_KEYS, STRUCTURE_NAMES } from './storage.js';
-import { getBeneficiaries, initFirebase } from './firebase-service.js';
+﻿import React, { useState } from 'react';
+import { load, save, STORAGE_KEYS, STRUCTURE_NAMES } from '../utils/storage.js';
+import { getBeneficiaries, initFirebase } from '../firebase-service.js';
 
 export default function LoginPage({ onLogin }) {
   const [structureId, setStructureId] = useState('struct_001');
