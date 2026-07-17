@@ -1,4 +1,4 @@
-/* ── Reset & Base ── */
+﻿/* â”€â”€ Reset & Base â”€â”€ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -58,14 +58,14 @@ input, select, textarea { font: inherit; }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
 
-/* ── Layout ── */
+/* â”€â”€ Layout â”€â”€ */
 .app-root {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
 
-/* ── Scrollable content area ── */
+/* â”€â”€ Scrollable content area â”€â”€ */
 .page-content {
   flex: 1;
   overflow-y: auto;
@@ -73,7 +73,7 @@ img { display: block; max-width: 100%; }
   -webkit-overflow-scrolling: touch;
 }
 
-/* ── Cards ── */
+/* â”€â”€ Cards â”€â”€ */
 .card {
   background: var(--card);
   border-radius: var(--radius-lg);
@@ -87,13 +87,13 @@ img { display: block; max-width: 100%; }
   overflow: hidden;
 }
 
-/* ── Typography ── */
+/* â”€â”€ Typography â”€â”€ */
 h1 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.02em; }
 h2 { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
 h3 { font-size: 0.95rem; font-weight: 600; color: var(--navy); }
 p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 
-/* ── Badges ── */
+/* â”€â”€ Badges â”€â”€ */
 .badge {
   display: inline-flex; align-items: center;
   border-radius: 999px; padding: 4px 10px;
@@ -105,7 +105,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .badge-red    { background: var(--red-50);   color: var(--red-700); }
 .badge-gray   { background: var(--gray-50);  color: var(--gray-600); }
 
-/* ── Buttons ── */
+/* â”€â”€ Buttons â”€â”€ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: 8px; border-radius: var(--radius-md);
@@ -118,7 +118,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
 .btn-danger { background: var(--red-50); color: var(--red-700); }
 
-/* ── Form elements ── */
+/* â”€â”€ Form elements â”€â”€ */
 .form-field { display: grid; gap: 6px; margin-bottom: 12px; }
 .form-field label { font-size: 0.82rem; font-weight: 500; color: var(--navy); }
 .form-field input,
@@ -143,7 +143,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 }
 .form-field textarea { min-height: 90px; resize: vertical; }
 
-/* ── Page header ── */
+/* â”€â”€ Page header â”€â”€ */
 .page-header {
   padding: calc(var(--safe-top) + 16px) 16px 16px;
   background: var(--card);
@@ -155,7 +155,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .page-header h1 { font-size: 1.1rem; }
 .page-header p { font-size: 0.8rem; margin-top: 2px; }
 
-/* ── List items ── */
+/* â”€â”€ List items â”€â”€ */
 .list-item {
   display: flex; align-items: center; gap: 12px;
   padding: 13px 16px;
@@ -171,7 +171,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .list-item-content strong { font-size: 0.9rem; font-weight: 500; display: block; }
 .list-item-content p { font-size: 0.78rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ── Stats grid ── */
+/* â”€â”€ Stats grid â”€â”€ */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -189,7 +189,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .stat-tile span { font-size: 0.7rem; color: var(--text-muted); display: block; margin-bottom: 4px; }
 .stat-tile strong { font-size: 1.4rem; font-weight: 600; color: var(--blue-700); }
 
-/* ── Empty state ── */
+/* â”€â”€ Empty state â”€â”€ */
 .empty-state {
   text-align: center;
   padding: 32px 24px;
@@ -198,7 +198,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .empty-state svg { margin: 0 auto 12px; opacity: 0.35; }
 .empty-state p { font-size: 0.88rem; }
 
-/* ── Bottom nav ── */
+/* â”€â”€ Bottom nav â”€â”€ */
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -234,7 +234,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
   border: 1.5px solid white;
 }
 
-/* ── Message bubbles ── */
+/* â”€â”€ Message bubbles â”€â”€ */
 .msg-wrap { padding: 8px 16px; }
 .bubble {
   max-width: 80%;
@@ -266,7 +266,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
   min-height: 200px;
 }
 
-/* ── Input bar (messagerie) ── */
+/* â”€â”€ Input bar (messagerie) â”€â”€ */
 .input-bar {
   position: fixed;
   bottom: calc(var(--nav-height) + var(--safe-bottom));
@@ -302,7 +302,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 }
 .send-btn:disabled { opacity: 0.4; }
 
-/* ── Agenda items ── */
+/* â”€â”€ Agenda items â”€â”€ */
 .agenda-card {
   padding: 13px 16px;
   border-bottom: 1px solid var(--border-light);
@@ -323,7 +323,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .agenda-info p { font-size: 0.78rem; margin-top: 3px; }
 .agenda-info .tag { display: inline-flex; margin-top: 6px; }
 
-/* ── Document items ── */
+/* â”€â”€ Document items â”€â”€ */
 .doc-item {
   display: flex; align-items: center; gap: 13px;
   padding: 13px 16px;
@@ -342,7 +342,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .doc-info p { font-size: 0.75rem; margin-top: 2px; }
 .doc-action { flex-shrink: 0; }
 
-/* ── Profile ── */
+/* â”€â”€ Profile â”€â”€ */
 .profile-hero {
   background: var(--navy);
   padding: calc(var(--safe-top) + 24px) 20px 24px;
@@ -372,7 +372,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .info-row span:first-child { color: var(--text-muted); }
 .info-row span:last-child { font-weight: 500; text-align: right; }
 
-/* ── Login screen ── */
+/* â”€â”€ Login screen â”€â”€ */
 .login-screen {
   min-height: 100dvh;
   background: linear-gradient(160deg, #0a1e3d 0%, #0e4bb7 100%);
@@ -412,7 +412,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
   margin-bottom: 12px;
 }
 
-/* ── Utility ── */
+/* â”€â”€ Utility â”€â”€ */
 .divider { height: 1px; background: var(--border); margin: 8px 0; }
 .section-label {
   font-size: 0.72rem;
@@ -428,7 +428,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 .mt-12 { margin-top: 12px; }
 .px-16 { padding: 0 16px; }
 
-/* ── Progress bar ── */
+/* â”€â”€ Progress bar â”€â”€ */
 .progress-track {
   height: 6px;
   background: var(--blue-50);
@@ -443,7 +443,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
   transition: width 0.5s ease;
 }
 
-/* ── Splash ── */
+/* â”€â”€ Splash â”€â”€ */
 .splash {
   position: fixed; inset: 0;
   background: linear-gradient(160deg, #0a1e3d 0%, #0e4bb7 100%);
@@ -461,7 +461,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 }
 @keyframes pulse { 0%,100%{ opacity:0.3; transform:scale(0.9); } 50%{ opacity:1; transform:scale(1.1); } }
 
-/* ── Tabs (agenda) ── */
+/* â”€â”€ Tabs (agenda) â”€â”€ */
 .tab-bar {
   display: flex; gap: 8px;
   padding: 12px 16px;
@@ -482,7 +482,7 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
 }
 .tab-pill.active { background: var(--blue-700); color: white; border-color: var(--blue-700); }
 
-/* ── Notification banner ── */
+/* â”€â”€ Notification banner â”€â”€ */
 .notif-banner {
   display: flex; align-items: center; gap: 10px;
   background: var(--green-50);
@@ -492,4 +492,28 @@ p  { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
   margin: 0 16px 12px;
   font-size: 0.82rem;
   color: var(--green-700);
+}
+
+/* ── FOND LOGO PCGI ── */
+body {
+  background-color: #dde6f0;
+  background-image: url('/pcgi-logo.jpg');
+  background-repeat: repeat;
+  background-size: 140px 140px;
+  background-attachment: fixed;
+}
+
+.page-content,
+.nav-bar,
+.login-screen {
+  background: transparent;
+}
+
+.card,
+.login-card,
+.stat-card,
+.agenda-card,
+.bubble {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
 }
