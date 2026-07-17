@@ -1,11 +1,11 @@
-{
+﻿{
   "name": "pcgi87-beneficiaire-pwa",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npx vite build",
     "preview": "vite preview",
     "serve": "npm run build && node server.cjs"
   },
@@ -24,3 +24,4 @@
     "vite-plugin-pwa": "^0.20.5"
   }
 }
+
