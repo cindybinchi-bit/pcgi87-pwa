@@ -1,33 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { formatDateTime } from '../utils/storage.js';
+import { formatDateTime } from './storage.js';
 import {
   initFirebase,
   getBeneficiaryConversationId,
   sendBeneficiaryMessage,
   onMessagesChange,
   markMessagesAsReadByBeneficiary,
-} from '../firebase-service.js';
+} from './firebase-service.js';
 import { Send, MessageSquareOff } from 'lucide-react';
 
 export default function MessagesPage({ ben }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [ready, setReady] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const conversationId = getBeneficiaryConversationId(ben.id);
 
+  // Écoute en temps réel les messages depuis Firestore, et marque
+  // automatiquement comme lus les messages du référent à l'ouverture.
   useEffect(() => {
     let unsub = () => {};
     initFirebase()
       .then(() => {
-        setReady(true);
         unsub = onMessagesChange(conversationId, (list) => {
           setMessages(list);
         });
         markMessagesAsReadByBeneficiary(conversationId).catch((err) =>
-          console.warn('Accusé de lecture :', err)
+          console.warn('Accusé de lecture bénéficiaire :', err)
         );
       })
       .catch((err) => console.warn('Firebase non disponible :', err));
@@ -79,19 +79,18 @@ export default function MessagesPage({ ben }) {
           {messages.map((m, i) => {
             const isMine = m.authorType === 'beneficiary';
             return (
-              <div key={m.id || i} className="msg-wrap"
-                style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
+              <div key={m.id || i} className="msg-wrap" style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
                 <div className="bubble-meta" style={{ textAlign: isMine ? 'right' : 'left' }}>
-                  {isMine ? 'Moi' : (m.authorName || 'Mon référent')} · {formatDateTime(m.createdAt)}
+                  {isMine ? 'Moi' : 'Mon référent'} · {formatDateTime(m.createdAt)}
                 </div>
                 <div className={`bubble ${isMine ? 'sent' : 'received'}`}>
                   {m.content}
                 </div>
-                {isMine && (
+                {isMine ? (
                   <div style={{ fontSize: '0.68rem', color: m.readAt ? '#0e9f6e' : '#94a3b8', marginTop: 2 }}>
                     {m.readAt ? '✓✓ Lu' : '✓ Envoyé'}
                   </div>
-                )}
+                ) : null}
               </div>
             );
           })}
@@ -99,18 +98,17 @@ export default function MessagesPage({ ben }) {
         </div>
       )}
 
+      {/* Barre de saisie fixe */}
       <div className="input-bar">
         <textarea
           ref={textareaRef}
           rows={1}
-          placeholder={ready ? 'Écrire un message…' : 'Connexion en cours…'}
+          placeholder="Écrire un message…"
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKey}
-          disabled={!ready}
         />
-        <button className="send-btn" onClick={handleSend}
-          disabled={!text.trim() || sending || !ready} aria-label="Envoyer">
+        <button className="send-btn" onClick={handleSend} disabled={!text.trim() || sending} aria-label="Envoyer">
           <Send size={18} />
         </button>
       </div>

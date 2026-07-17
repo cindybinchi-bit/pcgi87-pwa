@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from 'react';
-import { load, STORAGE_KEYS, formatDateTime, typeLabel } from '../utils/storage.js';
+import React, { useState, useEffect } from 'react';
+import { formatDateTime, typeLabel } from '../utils/storage.js';
+import { initFirebase, onAgendaChange } from '../firebase-service.js';
 import { CalendarOff } from 'lucide-react';
 
 function AgendaCard({ event }) {
   const dt = event.startAt ? new Date(event.startAt) : null;
-  const day = dt ? dt.toLocaleDateString('fr-FR', { day: '2-digit' }) : '—';
+  const day   = dt ? dt.toLocaleDateString('fr-FR', { day: '2-digit' }) : '—';
   const month = dt ? dt.toLocaleDateString('fr-FR', { month: 'short' }) : '';
-  const time = dt ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  const time  = dt ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+  const endDt = event.endAt ? new Date(event.endAt) : null;
 
   const typeColors = {
     rdv_referent:      { bg: '#e6f1fb', color: 'var(--blue-800)' },
@@ -14,6 +16,7 @@ function AgendaCard({ event }) {
     rdv_administratif: { bg: '#faeeda', color: 'var(--amber-700)' },
     reunion:           { bg: '#f1efe8', color: '#5f5e5a' },
     rappel:            { bg: '#fcebeb', color: 'var(--red-700)' },
+    prestation:        { bg: '#f3e8ff', color: '#7c3aed' },
   };
   const colors = typeColors[event.type] || { bg: '#f1efe8', color: '#5f5e5a' };
 
@@ -25,10 +28,13 @@ function AgendaCard({ event }) {
       </div>
       <div className="agenda-info" style={{ flex: 1 }}>
         <strong>{event.title || typeLabel(event.type)}</strong>
-        <p>{time && `${time} · `}{typeLabel(event.type)}</p>
-        {event.notes && (
-          <p style={{ marginTop: 4, fontStyle: 'italic' }}>{event.notes}</p>
-        )}
+        <p>
+          {time && `${time}`}
+          {endDt && event.endAt !== event.startAt && ` → ${endDt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+          {` · ${typeLabel(event.type)}`}
+        </p>
+        {event.notes && <p style={{ marginTop: 4, fontStyle: 'italic', fontSize: '0.8rem' }}>{event.notes}</p>}
+        {event.sharedFrom && <p style={{ marginTop: 4, fontSize: '0.78rem', color: '#64748b' }}>Partagé par {event.sharedFrom}</p>}
         <span className="tag badge" style={{ background: colors.bg, color: colors.color, marginTop: 6 }}>
           {typeLabel(event.type)}
         </span>
@@ -39,19 +45,32 @@ function AgendaCard({ event }) {
 
 export default function AgendaPage({ ben }) {
   const [tab, setTab] = useState('upcoming');
+  const [events, setEvents] = useState([]);
   const today = new Date().toISOString().slice(0, 10);
 
-  const { upcoming, past } = useMemo(() => {
-    const agendas = load(STORAGE_KEYS.agendas, {});
-    const list = (agendas?.beneficiary?.[ben.structureId] || [])
-      .filter(e => e.beneficiaryId === ben.id);
-    return {
-      upcoming: list.filter(e => (e.startAt || '') >= today).sort((a, b) => a.startAt.localeCompare(b.startAt)),
-      past:     list.filter(e => (e.startAt || '') < today).sort((a, b) => b.startAt.localeCompare(a.startAt)),
-    };
-  }, [ben]);
+  useEffect(() => {
+    let unsub = () => {};
+    initFirebase()
+      .then(() => {
+        unsub = onAgendaChange(ben.structureId, (allEvents) => {
+          // Filtrer les événements du bénéficiaire :
+          // 1. Événements directs (beneficiaryId)
+          // 2. Prestations extérieures affiliées
+          const myEvents = allEvents.filter(e =>
+            e.beneficiaryId === ben.id ||
+            (e.beneficiairesAffilies || []).includes(ben.id) ||
+            e.scope === 'structure_prestation' && (e.beneficiairesAffilies || []).includes(ben.id)
+          );
+          setEvents(myEvents);
+        });
+      })
+      .catch(err => console.warn('Firebase agenda non disponible :', err));
+    return () => unsub();
+  }, [ben.id, ben.structureId]);
 
-  const shown = tab === 'upcoming' ? upcoming : past;
+  const upcoming = events.filter(e => (e.startAt || '') >= today).sort((a, b) => a.startAt.localeCompare(b.startAt));
+  const past     = events.filter(e => (e.startAt || '') < today).sort((a, b) => b.startAt.localeCompare(a.startAt));
+  const shown    = tab === 'upcoming' ? upcoming : past;
 
   return (
     <div className="page-content">
@@ -61,12 +80,10 @@ export default function AgendaPage({ ben }) {
       </div>
 
       <div className="tab-bar">
-        <button className={`tab-pill ${tab === 'upcoming' ? 'active' : ''}`}
-          onClick={() => setTab('upcoming')}>
+        <button className={`tab-pill ${tab === 'upcoming' ? 'active' : ''}`} onClick={() => setTab('upcoming')}>
           À venir ({upcoming.length})
         </button>
-        <button className={`tab-pill ${tab === 'past' ? 'active' : ''}`}
-          onClick={() => setTab('past')}>
+        <button className={`tab-pill ${tab === 'past' ? 'active' : ''}`} onClick={() => setTab('past')}>
           Passés ({past.length})
         </button>
       </div>
