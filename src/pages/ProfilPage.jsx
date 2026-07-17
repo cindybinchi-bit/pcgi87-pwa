@@ -68,5 +68,9 @@ export default function ProfilPage({ ben, onLogout, onNavigate }) {
         Mon Espace PCGI 87 Â· v1.0
         <br />Pour modifier vos informations, contactez votre rÃ©fÃ©rent(e).
       </p>
-    </div><button onClick={onChangePassword} style={{ width: '100%', padding: '14px', background: 'var(--blue-700)', color: '#fff', border: 'none', borderRadius: 14, fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 8 }}>Changer mon code d acces</button></div>);}
+      <button onClick={onChangePassword} style={{ width: "100%", padding: "14px", background: "var(--blue-700)", color: "#fff", border: "none", borderRadius: 14, fontSize: "1rem", fontWeight: 700, cursor: "pointer", marginTop: 8 }}>Changer mon code</button>
+    </div>
+  );
+}
+
 
