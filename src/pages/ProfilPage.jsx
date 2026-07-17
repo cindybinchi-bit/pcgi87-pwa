@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { save, STORAGE_KEYS, formatDate, statusBadgeClass, initials, STRUCTURE_NAMES } from '../utils/storage.js';
 import { LogOut, MessageSquare } from 'lucide-react';
 
@@ -30,23 +30,23 @@ export default function ProfilPage({ ben, onLogout, onNavigate }) {
         </div>
         <div className="info-row">
           <span>Email</span>
-          <span>{ben.email || '—'}</span>
+          <span>{ben.email || 'â€”'}</span>
         </div>
         <div className="info-row">
-          <span>Téléphone</span>
-          <span>{ben.telephone || '—'}</span>
+          <span>TÃ©lÃ©phone</span>
+          <span>{ben.telephone || 'â€”'}</span>
         </div>
         <div className="info-row">
-          <span>Date d'entrée</span>
+          <span>Date d'entrÃ©e</span>
           <span>{formatDate(ben.dateEntree)}</span>
         </div>
         <div className="info-row">
           <span>Prescripteur</span>
-          <span>{ben.prescripteur || '—'}</span>
+          <span>{ben.prescripteur || 'â€”'}</span>
         </div>
         <div className="info-row" style={{ borderBottom: 'none' }}>
           <span>Projet professionnel</span>
-          <span style={{ maxWidth: '55%', textAlign: 'right' }}>{ben.projetProfessionnel || '—'}</span>
+          <span style={{ maxWidth: '55%', textAlign: 'right' }}>{ben.projetProfessionnel || 'â€”'}</span>
         </div>
       </div>
 
@@ -55,19 +55,18 @@ export default function ProfilPage({ ben, onLogout, onNavigate }) {
         <button className="btn btn-secondary" onClick={() => onNavigate('messages')}
           style={{ justifyContent: 'flex-start', gap: 10 }}>
           <MessageSquare size={18} />
-          Contacter mon référent(e)
+          Contacter mon rÃ©fÃ©rent(e)
         </button>
         <button className="btn btn-ghost" onClick={handleLogout}
           style={{ justifyContent: 'flex-start', gap: 10, color: 'var(--red-700)', borderColor: 'var(--red-50)', background: 'var(--red-50)' }}>
           <LogOut size={18} />
-          Se déconnecter
+          Se dÃ©connecter
         </button>
       </div>
 
       <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-subtle)', padding: '16px', marginTop: 4 }}>
-        Mon Espace PCGI 87 · v1.0
-        <br />Pour modifier vos informations, contactez votre référent(e).
+        Mon Espace PCGI 87 Â· v1.0
+        <br />Pour modifier vos informations, contactez votre rÃ©fÃ©rent(e).
       </p>
-    </div>
-  );
-}
+    </div><button onClick={onChangePassword} style={{ width: '100%', padding: '14px', background: 'var(--blue-700)', color: '#fff', border: 'none', borderRadius: 14, fontSize: '1rem', fontWeight: 700, cursor: 'pointer', marginTop: 8 }}>Changer mon code d acces</button></div>);}
+

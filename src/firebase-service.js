@@ -61,3 +61,8 @@ export function onAgendaChange(structureId, callback) {
 }
 
 export { db, auth };
+
+export async function updateBeneficiaryCode(structureId, beneficiaryId, newCode) {
+  const { doc, updateDoc } = await import('firebase/firestore');
+  await updateDoc(doc(db, 'structures', structureId, 'beneficiaires', beneficiaryId), { accessCode: newCode });
+}

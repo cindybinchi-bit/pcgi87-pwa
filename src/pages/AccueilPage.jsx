@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+﻿import React, { useMemo } from 'react';
 import { load, STORAGE_KEYS, formatDate, formatDateTime, statusBadgeClass, daysSince, typeLabel, STRUCTURE_NAMES } from '../utils/storage.js';
 import { CalendarDays, MessageSquare, FileText, ChevronRight } from 'lucide-react';
 
@@ -29,10 +29,10 @@ export default function AccueilPage({ ben, onNavigate }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <img src="/pcgi-logo.jpg" alt="PCGI 87" style={{ width: '56px', height: '56px', borderRadius: '8px' }} />
           <div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', marginBottom: 4 }}>
-              Bonjour 👋
+            <p style={{ color: '#c084fc', fontSize: '0.82rem', marginBottom: 4, fontWeight: 600 }}>
+              Bonjour ðŸ‘‹
             </p>
-            <h1 style={{ color: 'white', fontSize: '1.4rem', margin: 0 }}>
+            <h1 style={{ color: '#e9d5ff', fontSize: '1.4rem', margin: 0, fontWeight: 700 }}>
               {ben.prenom} {ben.nom}
             </h1>
           </div>
@@ -52,7 +52,7 @@ export default function AccueilPage({ ben, onNavigate }) {
           <strong>{jours}</strong>
         </div>
         <div className="stat-tile">
-          <span>RDV à venir</span>
+          <span>RDV Ã  venir</span>
           <strong>{upcomingRdv.length}</strong>
         </div>
         <div className="stat-tile">
@@ -79,25 +79,25 @@ export default function AccueilPage({ ben, onNavigate }) {
         <div className="row-between" style={{ marginBottom: 10 }}>
           <h3>Mon parcours</h3>
           <span style={{ fontSize: '0.78rem', color: 'var(--blue-700)', fontWeight: 500 }}>
-            {ben.projetProfessionnel || 'À définir'}
+            {ben.projetProfessionnel || 'Ã€ dÃ©finir'}
           </span>
         </div>
         <div className="info-row">
-          <span>Entrée</span>
+          <span>EntrÃ©e</span>
           <span>{formatDate(ben.dateEntree)}</span>
         </div>
         <div className="info-row">
           <span>Prescripteur</span>
-          <span>{ben.prescripteur || '—'}</span>
+          <span>{ben.prescripteur || 'â€”'}</span>
         </div>
         <div className="info-row" style={{ borderBottom: 'none' }}>
           <span>Projet professionnel</span>
-          <span>{ben.projetProfessionnel || '—'}</span>
+          <span>{ben.projetProfessionnel || 'â€”'}</span>
         </div>
       </div>
 
       {/* Raccourcis */}
-      <div className="section-label">Accès rapide</div>
+      <div className="section-label">AccÃ¨s rapide</div>
       <div className="card" style={{ padding: 0 }}>
         <button className="list-item" style={{ width: '100%', textAlign: 'left', background: 'none' }}
           onClick={() => onNavigate('agenda')}>
@@ -106,7 +106,7 @@ export default function AccueilPage({ ben, onNavigate }) {
           </div>
           <div className="list-item-content">
             <strong>Agenda</strong>
-            <p>{upcomingRdv.length} rendez-vous à venir</p>
+            <p>{upcomingRdv.length} rendez-vous Ã  venir</p>
           </div>
           <ChevronRight size={16} color="var(--text-subtle)" />
         </button>
@@ -130,7 +130,7 @@ export default function AccueilPage({ ben, onNavigate }) {
           </div>
           <div className="list-item-content">
             <strong>Documents</strong>
-            <p>Vos pièces et documents partagés</p>
+            <p>Vos piÃ¨ces et documents partagÃ©s</p>
           </div>
           <ChevronRight size={16} color="var(--text-subtle)" />
         </button>
@@ -138,3 +138,4 @@ export default function AccueilPage({ ben, onNavigate }) {
     </div>
   );
 }
+
