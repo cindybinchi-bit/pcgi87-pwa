@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { load, save, STORAGE_KEYS, STRUCTURE_NAMES, DEMO_BEN } from '../utils/storage.js';
-import { getBeneficiaries, initFirebase } from '../firebase-service.js';
+﻿import React, { useState, useEffect } from 'react';
+import { load, save, STORAGE_KEYS, STRUCTURE_NAMES } from './storage.js';
+import { getBeneficiaries, initFirebase } from './firebase-service.js';
 
 export default function LoginPage({ onLogin }) {
   const [structureId, setStructureId] = useState('struct_001');
@@ -13,48 +13,41 @@ export default function LoginPage({ onLogin }) {
     e.preventDefault();
     setError('');
     if (!nom.trim() || !code.trim()) {
-      setError('Veuillez renseigner votre nom et votre code d\'accès.');
+      setError("Veuillez renseigner votre nom et votre code d'acces.");
       return;
     }
     setLoading(true);
-
     try {
-      // Initialiser Firebase
       await initFirebase();
-
-      // Charger les bénéficiaires depuis Firebase
       let list = [];
       try {
         list = await getBeneficiaries(structureId);
       } catch (err) {
-        console.warn('Firebase non disponible, chargement depuis localStorage', err);
         const allBenefs = load(STORAGE_KEYS.beneficiaires, {});
         list = allBenefs[structureId] || [];
       }
-
-      let found = list.find(b => {
-        const full = `${b.prenom || ''} ${b.nom || ''}`.trim().toLowerCase();
-        return full === nom.trim().toLowerCase() && (b.accessCode || 'PCGI87!') === code.trim();
+      const input = nom.trim().toLowerCase();
+      const inputCode = code.trim();
+      const found = list.find(b => {
+        const validCode = (b.accessCode || 'PCGI87!') === inputCode;
+        if (!validCode) return false;
+        const fullNomPrenom = ((b.nom || '') + ' ' + (b.prenom || '')).trim().toLowerCase();
+        const fullPrenomNom = ((b.prenom || '') + ' ' + (b.nom || '')).trim().toLowerCase();
+        const nomSeul = (b.nom || '').trim().toLowerCase();
+        const prenomSeul = (b.prenom || '').trim().toLowerCase();
+        const emailB = (b.email || '').trim().toLowerCase();
+        return input === fullNomPrenom || input === fullPrenomNom || input === nomSeul || input === prenomSeul || (emailB && input === emailB);
       });
-
-      if (!found && code.trim() === 'PCGI87!') {
-        // Mode démo
-        found = { ...DEMO_BEN, structureId };
-      }
-
       if (!found) {
-        setError('Identifiants incorrects. Contactez votre référent(e) si vous avez oublié votre code.');
+        setError("Identifiants incorrects. Essayez votre nom seul, prenom seul, ou prenom+nom. Code par defaut : PCGI87!");
         setLoading(false);
         return;
       }
-
-      const session = { benId: found.id, structureId, nom: found.nom, prenom: found.prenom, ts: Date.now() };
-      save(STORAGE_KEYS.session, session);
+      save(STORAGE_KEYS.session, { benId: found.id, structureId, nom: found.nom, prenom: found.prenom, ts: Date.now() });
       onLogin({ ...found, structureId });
       setLoading(false);
     } catch (err) {
-      console.error('Erreur lors de la connexion:', err);
-      setError('Erreur de connexion. Vérifiez votre nom et code.');
+      setError("Erreur de connexion. Verifiez votre nom et code.");
       setLoading(false);
     }
   }
@@ -62,61 +55,33 @@ export default function LoginPage({ onLogin }) {
   return (
     <div className="login-screen">
       <div className="login-logo">
-        <img src="/pcgi-logo.jpg" alt="PCGI 87" style={{ width: '120px', height: '120px', marginBottom: '16px', borderRadius: '12px' }} />
-        <h1>🌿 Mon Espace</h1>
-        <p>Portail bénéficiaire · PCGI 87</p>
+        <img src="/pcgi-logo.jpg" alt="PCGI 87" style={{ width: '108px', height: '108px', marginBottom: '14px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.35)' }} />
+        <h1>Mon Espace</h1>
+        <p>Portail beneficiaire - PCGI 87</p>
       </div>
-
       <div className="login-card">
-        <div className="login-hint">
-          💡 Connectez-vous avec les identifiants fournis par votre référent(e).
-        </div>
-
+        <div className="login-hint">Connectez-vous avec les identifiants fournis par votre referent(e).</div>
         {error && <div className="error-box">{error}</div>}
-
         <form onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label htmlFor="struct">Votre structure</label>
-            <select id="struct" value={structureId} onChange={e => setStructureId(e.target.value)}>
-              {Object.entries(STRUCTURE_NAMES).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
+          <div className="field-group">
+            <label>Votre structure</label>
+            <select value={structureId} onChange={e => setStructureId(e.target.value)}>
+              {Object.entries(STRUCTURE_NAMES).map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
               ))}
             </select>
           </div>
-
-          <div className="form-field">
-            <label htmlFor="nom">Nom et prénom</label>
-            <input
-              id="nom"
-              type="text"
-              placeholder="Ex : Sophie Martin"
-              value={nom}
-              onChange={e => setNom(e.target.value)}
-              autoComplete="name"
-              autoCapitalize="words"
-            />
+          <div className="field-group">
+            <label>Nom et prenom</label>
+            <input type="text" value={nom} onChange={e => setNom(e.target.value)} placeholder="Ex : Sophie Martin" required />
           </div>
-
-          <div className="form-field">
-            <label htmlFor="code">Code d'accès</label>
-            <input
-              id="code"
-              type="password"
-              placeholder="Code fourni par votre référent"
-              value={code}
-              onChange={e => setCode(e.target.value)}
-              autoComplete="current-password"
-            />
+          <div className="field-group">
+            <label>Code d acces</label>
+            <input type="password" value={code} onChange={e => setCode(e.target.value)} placeholder="Code fourni par votre referent" required />
           </div>
-
-          <button className="btn btn-primary mt-8" type="submit" disabled={loading}>
-            {loading ? 'Connexion…' : 'Se connecter →'}
-          </button>
+          <button type="submit" className="btn-login" disabled={loading}>{loading ? 'Connexion...' : 'Se connecter'}</button>
         </form>
-
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', textAlign: 'center', marginTop: 16 }}>
-          Démo : entrez n'importe quel nom + code <strong>PCGI87!</strong>
-        </p>
+        <p style={{ marginTop: 16, fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center' }}>Code par defaut : PCGI87! - Contactez votre referent(e) en cas de probleme.</p>
       </div>
     </div>
   );
