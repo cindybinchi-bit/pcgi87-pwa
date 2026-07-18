@@ -93,3 +93,13 @@ export async function markMessagesAsReadByBeneficiary(conversationId) {
   const snap = await getDocs(q);
   await Promise.all(snap.docs.filter(d => !d.data().readAt).map(d => updateDoc(doc(db, 'conversations', conversationId, 'messages', d.id), { readAt: serverTimestamp() })));
 }
+
+export async function requestCodeReminder(structureId, nomBeneficiaire) {
+  const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+  await addDoc(collection(db, 'code_reminder_requests'), {
+    structureId,
+    nomBeneficiaire,
+    createdAt: serverTimestamp(),
+    treated: false,
+  });
+}
