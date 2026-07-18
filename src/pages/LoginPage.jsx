@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { load, save, STORAGE_KEYS, STRUCTURE_NAMES } from '../utils/storage.js';
 import { getBeneficiaries, initFirebase } from '../firebase-service.js';
 

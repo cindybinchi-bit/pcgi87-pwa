@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoginPage from './pages/LoginPage.jsx';
 import AccueilPage from './pages/AccueilPage.jsx';
 import AgendaPage from './pages/AgendaPage.jsx';

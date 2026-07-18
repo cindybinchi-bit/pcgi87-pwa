@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { save, STORAGE_KEYS, formatDate, statusBadgeClass, initials, STRUCTURE_NAMES } from '../utils/storage.js';
 import { LogOut, MessageSquare } from 'lucide-react';
 

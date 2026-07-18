@@ -1,4 +1,4 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { load, STORAGE_KEYS, formatDate, formatDateTime, statusBadgeClass, daysSince, typeLabel, STRUCTURE_NAMES } from '../utils/storage.js';
 import { CalendarDays, MessageSquare, FileText, ChevronRight } from 'lucide-react';
 

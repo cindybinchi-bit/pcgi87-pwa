@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { save, STORAGE_KEYS } from '../utils/storage.js';
 import { updateBeneficiaryCode } from '../firebase-service.js';
 
