@@ -79,11 +79,11 @@ export default function AccueilPage({ ben, onNavigate }) {
         <div className="row-between" style={{ marginBottom: 10 }}>
           <h3>Mon parcours</h3>
           <span style={{ fontSize: '0.78rem', color: 'var(--blue-700)', fontWeight: 500 }}>
-            {ben.projetProfessionnel || 'Ã€ dÃ©finir'}
+            {ben.projetProfessionnel || 'À définir'}
           </span>
         </div>
         <div className="info-row">
-          <span>EntrÃ©e</span>
+          <span>Entrée</span>
           <span>{formatDate(ben.dateEntree)}</span>
         </div>
         <div className="info-row">
@@ -130,7 +130,7 @@ export default function AccueilPage({ ben, onNavigate }) {
           </div>
           <div className="list-item-content">
             <strong>Documents</strong>
-            <p>Vos piÃ¨ces et documents partagÃ©s</p>
+            <p>Vos piÃ¨ces et documents partagés</p>
           </div>
           <ChevronRight size={16} color="var(--text-subtle)" />
         </button>
@@ -138,4 +138,5 @@ export default function AccueilPage({ ben, onNavigate }) {
     </div>
   );
 }
+
 
