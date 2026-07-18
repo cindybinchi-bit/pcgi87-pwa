@@ -66,3 +66,30 @@ export async function updateBeneficiaryCode(structureId, beneficiaryId, newCode)
   const { doc, updateDoc } = await import('firebase/firestore');
   await updateDoc(doc(db, 'structures', structureId, 'beneficiaires', beneficiaryId), { accessCode: newCode });
 }
+
+export function getBeneficiaryConversationId(beneficiaryId) {
+  return 'benef_conversation_' + beneficiaryId;
+}
+
+export function onMessagesChange(conversationId, callback) {
+  const { collection, query, orderBy, onSnapshot } = require('firebase/firestore');
+  const q = query(collection(db, 'conversations', conversationId, 'messages'), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, (snap) => {
+    const msgs = snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString() }));
+    callback(msgs);
+  });
+}
+
+export async function sendBeneficiaryMessage(conversationId, ben, content) {
+  const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+  await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
+    content, authorType: 'beneficiary', authorId: ben.id, authorName: ben.prenom + ' ' + ben.nom, createdAt: serverTimestamp(),
+  });
+}
+
+export async function markMessagesAsReadByBeneficiary(conversationId) {
+  const { collection, getDocs, doc, updateDoc, serverTimestamp, where, query } = await import('firebase/firestore');
+  const q = query(collection(db, 'conversations', conversationId, 'messages'), where('authorType', '==', 'professional'));
+  const snap = await getDocs(q);
+  await Promise.all(snap.docs.filter(d => !d.data().readAt).map(d => updateDoc(doc(db, 'conversations', conversationId, 'messages', d.id), { readAt: serverTimestamp() })));
+}
