@@ -30,23 +30,23 @@ export default function ProfilPage({ ben, onLogout, onNavigate }) {
         </div>
         <div className="info-row">
           <span>Email</span>
-          <span>{ben.email || 'â€”'}</span>
+          <span>{ben.email || '"”'}</span>
         </div>
         <div className="info-row">
-          <span>TÃ©lÃ©phone</span>
-          <span>{ben.telephone || 'â€”'}</span>
+          <span>Téléphone</span>
+          <span>{ben.telephone || '"”'}</span>
         </div>
         <div className="info-row">
-          <span>Date d'entrÃ©e</span>
+          <span>Date d'entrée</span>
           <span>{formatDate(ben.dateEntree)}</span>
         </div>
         <div className="info-row">
           <span>Prescripteur</span>
-          <span>{ben.prescripteur || 'â€”'}</span>
+          <span>{ben.prescripteur || '"”'}</span>
         </div>
         <div className="info-row" style={{ borderBottom: 'none' }}>
           <span>Projet professionnel</span>
-          <span style={{ maxWidth: '55%', textAlign: 'right' }}>{ben.projetProfessionnel || 'â€”'}</span>
+          <span style={{ maxWidth: '55%', textAlign: 'right' }}>{ben.projetProfessionnel || '"”'}</span>
         </div>
       </div>
 
@@ -55,18 +55,18 @@ export default function ProfilPage({ ben, onLogout, onNavigate }) {
         <button className="btn btn-secondary" onClick={() => onNavigate('messages')}
           style={{ justifyContent: 'flex-start', gap: 10 }}>
           <MessageSquare size={18} />
-          Contacter mon rÃ©fÃ©rent(e)
+          Contacter mon référent(e)
         </button>
         <button className="btn btn-ghost" onClick={handleLogout}
           style={{ justifyContent: 'flex-start', gap: 10, color: 'var(--red-700)', borderColor: 'var(--red-50)', background: 'var(--red-50)' }}>
           <LogOut size={18} />
-          Se dÃ©connecter
+          Se déconnecter
         </button>
       </div>
 
       <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-subtle)', padding: '16px', marginTop: 4 }}>
-        Mon Espace PCGI 87 Â· v1.0
-        <br />Pour modifier vos informations, contactez votre rÃ©fÃ©rent(e).
+        Mon Espace PCGI 87 · v1.0
+        <br />Pour modifier vos informations, contactez votre référent(e).
       </p>
 
     </div>
