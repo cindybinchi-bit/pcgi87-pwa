@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { load, STORAGE_KEYS, formatDate, formatDateTime, statusBadgeClass, daysSince, typeLabel, STRUCTURE_NAMES } from '../utils/storage.js';
-import { CalendarDays, MessageSquare, FileText, ChevronRight } from 'lucide-react';
+import { CalendarDays, MessageSquare, FileText, ChevronRight, Target } from 'lucide-react';
+
+const CV_ENTRETIEN_LINK = 'https://ursdac-jpg.github.io/TRE-ERIP/#cv';
 
 export default function AccueilPage({ ben, onNavigate }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -113,7 +115,7 @@ export default function AccueilPage({ ben, onNavigate }) {
           </div>
           <ChevronRight size={16} color="var(--text-subtle)" />
         </button>
-        <button className="list-item" style={{ width: '100%', textAlign: 'left', background: 'none', borderBottom: 'none' }}
+        <button className="list-item" style={{ width: '100%', textAlign: 'left', background: 'none' }}
           onClick={() => onNavigate('documents')}>
           <div className="list-item-icon" style={{ background: 'var(--green-50)' }}>
             <FileText size={20} color="var(--green-700)" />
@@ -124,6 +126,17 @@ export default function AccueilPage({ ben, onNavigate }) {
           </div>
           <ChevronRight size={16} color="var(--text-subtle)" />
         </button>
+        <a className="list-item" style={{ width: '100%', textAlign: 'left', background: 'none', borderBottom: 'none', textDecoration: 'none', color: 'inherit' }}
+          href={CV_ENTRETIEN_LINK} target="_blank" rel="noreferrer">
+          <div className="list-item-icon" style={{ background: '#dcfce7' }}>
+            <Target size={20} color="#16a34a" />
+          </div>
+          <div className="list-item-content">
+            <strong>Outil CV & entretien</strong>
+            <p>S'entrainer et preparer sa recherche d'emploi</p>
+          </div>
+          <ChevronRight size={16} color="var(--text-subtle)" />
+        </a>
       </div>
     </div>
   );
