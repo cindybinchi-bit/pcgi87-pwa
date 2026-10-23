@@ -1,106 +1,78 @@
-import React, { useState, useEffect } from 'react';
-import { formatDateTime, typeLabel } from '../utils/storage.js';
-import { initFirebase, onAgendaChange } from '../firebase-service.js';
+import React, { useMemo, useState } from 'react';
 import { CalendarOff } from 'lucide-react';
+import { libelleType } from '../utils.js';
 
-function AgendaCard({ event }) {
-  const dt = event.startAt ? new Date(event.startAt) : null;
-  const day   = dt ? dt.toLocaleDateString('fr-FR', { day: '2-digit' }) : '—';
-  const month = dt ? dt.toLocaleDateString('fr-FR', { month: 'short' }) : '';
-  const time  = dt ? dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
-  const endDt = event.endAt ? new Date(event.endAt) : null;
+const COULEURS = {
+  rdv_referent: { bg: '#e6f1fb', color: 'var(--blue-800)' },
+  atelier_collectif: { bg: '#eaf3de', color: 'var(--green-700)' },
+  rdv_administratif: { bg: '#faeeda', color: 'var(--amber-700)' },
+  reunion: { bg: '#f1efe8', color: '#5f5e5a' },
+  rappel: { bg: '#fcebeb', color: 'var(--red-700)' },
+  prestation: { bg: '#f3e8ff', color: '#7c3aed' },
+};
 
-  const typeColors = {
-    rdv_referent:      { bg: '#e6f1fb', color: 'var(--blue-800)' },
-    atelier_collectif: { bg: '#eaf3de', color: 'var(--green-700)' },
-    rdv_administratif: { bg: '#faeeda', color: 'var(--amber-700)' },
-    reunion:           { bg: '#f1efe8', color: '#5f5e5a' },
-    rappel:            { bg: '#fcebeb', color: 'var(--red-700)' },
-    prestation:        { bg: '#f3e8ff', color: '#7c3aed' },
-  };
-  const colors = typeColors[event.type] || { bg: '#f1efe8', color: '#5f5e5a' };
-
+function Carte({ evenement: e }) {
+  const debut = e.startAt ? new Date(e.startAt) : null;
+  const fin = e.endAt ? new Date(e.endAt) : null;
+  const valide = debut && !Number.isNaN(debut.getTime());
+  const couleurs = COULEURS[e.type] || { bg: '#f1efe8', color: '#5f5e5a' };
   return (
     <div className="agenda-card">
       <div className="agenda-date-chip">
-        <span>{month}</span>
-        <strong>{day}</strong>
+        <span>{valide ? debut.toLocaleDateString('fr-FR', { month: 'short' }) : ''}</span>
+        <strong>{valide ? debut.toLocaleDateString('fr-FR', { day: '2-digit' }) : '—'}</strong>
       </div>
       <div className="agenda-info" style={{ flex: 1 }}>
-        <strong>{event.title || typeLabel(event.type)}</strong>
+        <strong>{e.title || libelleType(e.type)}</strong>
         <p>
-          {time && `${time}`}
-          {endDt && event.endAt !== event.startAt && ` → ${endDt.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
-          {` · ${typeLabel(event.type)}`}
+          {valide ? debut.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+          {fin && e.endAt !== e.startAt && !Number.isNaN(fin.getTime())
+            ? ` → ${fin.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+            : ''}
         </p>
-        {event.notes && <p style={{ marginTop: 4, fontStyle: 'italic', fontSize: '0.8rem' }}>{event.notes}</p>}
-        {event.sharedFrom && <p style={{ marginTop: 4, fontSize: '0.78rem', color: '#64748b' }}>Partagé par {event.sharedFrom}</p>}
-        <span className="tag badge" style={{ background: colors.bg, color: colors.color, marginTop: 6 }}>
-          {typeLabel(event.type)}
-        </span>
+        {e.lieu ? <p style={{ marginTop: 4, fontSize: '0.8rem' }}>📍 {e.lieu}</p> : null}
+        {e.notes ? <p style={{ marginTop: 4, fontStyle: 'italic', fontSize: '0.8rem' }}>{e.notes}</p> : null}
+        <span className="badge" style={{ background: couleurs.bg, color: couleurs.color, marginTop: 6 }}>{libelleType(e.type)}</span>
       </div>
     </div>
   );
 }
 
-export default function AgendaPage({ ben }) {
-  const [tab, setTab] = useState('upcoming');
-  const [events, setEvents] = useState([]);
-  const today = new Date().toISOString().slice(0, 10);
-
-  useEffect(() => {
-    let unsub = () => {};
-    initFirebase()
-      .then(() => {
-        unsub = onAgendaChange(ben.structureId, (allEvents) => {
-          // Filtrer les événements du bénéficiaire :
-          // 1. Événements directs (beneficiaryId)
-          // 2. Prestations extérieures affiliées
-          const myEvents = allEvents.filter(e =>
-            e.beneficiaryId === ben.id ||
-            (e.beneficiairesAffilies || []).includes(ben.id) ||
-            e.scope === 'structure_prestation' && (e.beneficiairesAffilies || []).includes(ben.id)
-          );
-          setEvents(myEvents);
-        });
-      })
-      .catch(err => console.warn('Firebase agenda non disponible :', err));
-    return () => unsub();
-  }, [ben.id, ben.structureId]);
-
-  const upcoming = events.filter(e => (e.startAt || '') >= today).sort((a, b) => a.startAt.localeCompare(b.startAt));
-  const past     = events.filter(e => (e.startAt || '') < today).sort((a, b) => b.startAt.localeCompare(a.startAt));
-  const shown    = tab === 'upcoming' ? upcoming : past;
+export default function AgendaPage({ agenda }) {
+  const [onglet, setOnglet] = useState('avenir');
+  const { avenir, passes } = useMemo(() => {
+    const auj = new Date().toISOString().slice(0, 10);
+    return {
+      avenir: agenda.filter((e) => (e.startAt || '') >= auj).sort((a, b) => String(a.startAt).localeCompare(String(b.startAt))),
+      passes: agenda.filter((e) => (e.startAt || '') < auj).sort((a, b) => String(b.startAt).localeCompare(String(a.startAt))),
+    };
+  }, [agenda]);
+  const liste = onglet === 'avenir' ? avenir : passes;
 
   return (
-    <div className="page-content">
+    <main className="page-content">
       <div className="page-header">
         <h1>Mon agenda</h1>
         <p>Rendez-vous et ateliers programmés</p>
       </div>
-
-      <div className="tab-bar">
-        <button className={`tab-pill ${tab === 'upcoming' ? 'active' : ''}`} onClick={() => setTab('upcoming')}>
-          À venir ({upcoming.length})
+      <div className="tab-bar" role="tablist">
+        <button type="button" role="tab" aria-selected={onglet === 'avenir'} className={`tab-pill ${onglet === 'avenir' ? 'active' : ''}`} onClick={() => setOnglet('avenir')}>
+          À venir ({avenir.length})
         </button>
-        <button className={`tab-pill ${tab === 'past' ? 'active' : ''}`} onClick={() => setTab('past')}>
-          Passés ({past.length})
+        <button type="button" role="tab" aria-selected={onglet === 'passes'} className={`tab-pill ${onglet === 'passes' ? 'active' : ''}`} onClick={() => setOnglet('passes')}>
+          Passés ({passes.length})
         </button>
       </div>
-
-      {shown.length === 0 ? (
+      {liste.length === 0 ? (
         <div className="empty-state">
-          <CalendarOff size={40} />
-          <p>{tab === 'upcoming' ? 'Aucun rendez-vous à venir.' : 'Aucun rendez-vous passé.'}</p>
-          <p style={{ marginTop: 6, fontSize: '0.78rem' }}>
-            Votre référent(e) vous convoquera prochainement.
-          </p>
+          <CalendarOff size={40} aria-hidden="true" />
+          <p>{onglet === 'avenir' ? 'Aucun rendez-vous à venir.' : 'Aucun rendez-vous passé.'}</p>
         </div>
       ) : (
         <div className="card" style={{ padding: 0 }}>
-          {shown.map(e => <AgendaCard key={e.id} event={e} />)}
+          {liste.map((e) => <Carte key={e.id} evenement={e} />)}
         </div>
       )}
-    </div>
+    </main>
   );
 }

@@ -7,32 +7,35 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pcgi-logo.jpg'],
       manifest: {
         name: 'Mon Espace PCGI 87',
         short_name: 'Mon Espace',
-        description: 'Portail bénéficiaire PCGI 87 — Plateforme de coordination globale de l\'insertion',
+        description: 'Portail bénéficiaire PCGI 87 : rendez-vous, messages et documents.',
+        lang: 'fr',
         theme_color: '#0e4bb7',
         background_color: '#eef3f8',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         icons: [
-          { src: 'pcgi-logo.jpg', sizes: '512x512', type: 'image/jpeg', purpose: 'any' },
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-        ]
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: { cacheName: 'google-fonts-cache', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } }
-          }
-        ]
-      }
-    })
-  ]
+        // Seule l'interface est mise en cache : aucune donnée personnelle.
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg}'],
+        navigateFallback: '/index.html',
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+      },
+    }),
+  ],
+  build: {
+    sourcemap: false,
+    chunkSizeWarningLimit: 900,
+  },
 });

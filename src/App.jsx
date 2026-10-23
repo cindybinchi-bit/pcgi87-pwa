@@ -1,95 +1,126 @@
-import React, { useState, useEffect } from 'react';
-import LoginPage from './pages/LoginPage.jsx';
+import React, { useEffect, useMemo, useState } from 'react';
+import { suivreSession, seDeconnecter } from './firebase.js';
+import { suivreFiche, suivreAgenda, suivreMessages } from './donnees.js';
+import { nettoyerAnciennesDonnees } from './utils.js';
+import Chargement from './components/Chargement.jsx';
+import BarreNavigation from './components/BarreNavigation.jsx';
+import ConnexionPage from './pages/ConnexionPage.jsx';
+import ChoixCodePage from './pages/ChoixCodePage.jsx';
 import AccueilPage from './pages/AccueilPage.jsx';
 import AgendaPage from './pages/AgendaPage.jsx';
 import MessagesPage from './pages/MessagesPage.jsx';
 import DocumentsPage from './pages/DocumentsPage.jsx';
 import ProfilPage from './pages/ProfilPage.jsx';
-import BottomNav from './components/BottomNav.jsx';
-import { load, save, STORAGE_KEYS } from './utils/storage.js';
-import { initFCM, onFCMMessage } from './fcm-service.js';
-
-function Splash() {
-  return (
-    <div className="splash">
-      <h1>ðŸŒ¿ Mon Espace</h1>
-      <p>PCGI 87</p>
-      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-        {[0, 0.2, 0.4].map((delay, i) => (
-          <div key={i} className="splash-dot" style={{ animationDelay: `${delay}s` }} />
-        ))}
-      </div>
-    </div>
-  );
-}
+import ConfidentialitePage from './pages/ConfidentialitePage.jsx';
 
 export default function App() {
-  const [splash, setSplash] = useState(true);
-  const [ben, setBen] = useState(null);
+  const [session, setSession] = useState(undefined); // undefined = vérification en cours
   const [page, setPage] = useState('accueil');
+  const [fiche, setFiche] = useState(null);
+  const [agenda, setAgenda] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [messagesCharges, setMessagesCharges] = useState(false);
+  const [avisConnexion, setAvisConnexion] = useState('');
+  const [voirConfidentialite, setVoirConfidentialite] = useState(false);
+  const [changerCodeVolontaire, setChangerCodeVolontaire] = useState(false);
 
-  // Splash + restore session
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const session = load(STORAGE_KEYS.session, null);
-      if (session && session.benId) {
-        // Tenter de recharger le bÃ©nÃ©ficiaire depuis le storage principal
-        const allBenefs = load(STORAGE_KEYS.beneficiaires, {});
-        const structBenefs = allBenefs[session.structureId] || [];
-        const found = structBenefs.find(b => b.id === session.benId);
-        if (found) {
-          setBen({ ...found, structureId: session.structureId });
-        } else if (session.benId === 'demo_001') {
-          setBen({ ...DEMO_BEN, structureId: session.structureId });
-        }
+    nettoyerAnciennesDonnees();
+    return suivreSession((s) => {
+      setSession(s);
+      if (!s) {
+        setFiche(null);
+        setAgenda([]);
+        setMessages([]);
+        setMessagesCharges(false);
+        setPage('accueil');
       }
-      setSplash(false);
-    }, 900);
-    return () => clearTimeout(timer);
+    });
   }, []);
 
-  function handleLogin(beneficiaire) {
-    setBen(beneficiaire);
-    setPage('accueil');
-    // Initialiser FCM pour les notifications
-    initFCM().catch(err => console.error('FCM init error:', err));
-  }
+  const pret = Boolean(session && !session.codeProvisoire);
 
-  function handleLogout() {
-    setBen(null);
-    setPage('accueil');
-  }
-
-  // Ã‰couter les messages FCM
   useEffect(() => {
-    if (ben) {
-      onFCMMessage((payload) => {
-        console.log('ðŸ“¬ Nouvelle notification:', payload.notification.title);
-        // Afficher une notification visuelle si souhaitÃ©
-      });
-    }
-  }, [ben]);
+    if (!pret) return undefined;
+    const { structureId, benId } = session;
+    const surErreur = (err) => {
+      if (err?.code === 'permission-denied') {
+        setAvisConnexion('Votre session a expiré. Merci de vous reconnecter.');
+        seDeconnecter();
+      }
+    };
+    const u1 = suivreFiche(structureId, benId, (f) => {
+      if (f) setFiche(f);
+      else {
+        setAvisConnexion('Votre espace n\'est plus disponible. Contactez votre référent(e).');
+        seDeconnecter();
+      }
+    }, surErreur);
+    const u2 = suivreAgenda(structureId, benId, setAgenda, surErreur);
+    const u3 = suivreMessages(benId, (list) => { setMessages(list); setMessagesCharges(true); }, surErreur);
+    return () => { u1(); u2(); u3(); };
+  }, [pret, session?.structureId, session?.benId]);
 
-  if (splash) return <Splash />;
+  const nonLus = useMemo(
+    () => messages.filter((m) => m.authorType === 'professional' && !m.readAt).length,
+    [messages],
+  );
 
-  if (!ben) return <LoginPage onLogin={handleLogin} />;
+  if (session === undefined) return <Chargement />;
 
-  function renderPage() {
-    switch (page) {
-      case 'accueil':   return <AccueilPage   ben={ben} onNavigate={setPage} />;
-      case 'agenda':    return <AgendaPage     ben={ben} />;
-      case 'messages':  return <MessagesPage   ben={ben} />;
-      case 'documents': return <DocumentsPage  ben={ben} />;
-      case 'profil':    return <ProfilPage     ben={ben} onLogout={handleLogout} onNavigate={setPage} />;
-      default:          return <AccueilPage    ben={ben} onNavigate={setPage} />;
-    }
+  if (voirConfidentialite) {
+    return (
+      <ConfidentialitePage
+        structureId={session?.structureId}
+        onRetour={() => setVoirConfidentialite(false)}
+      />
+    );
+  }
+
+  if (!session) {
+    return (
+      <ConnexionPage
+        avis={avisConnexion}
+        onAvisLu={() => setAvisConnexion('')}
+        onConfidentialite={() => setVoirConfidentialite(true)}
+      />
+    );
+  }
+
+  if (session.codeProvisoire || changerCodeVolontaire) {
+    return (
+      <ChoixCodePage
+        obligatoire={session.codeProvisoire}
+        onTermine={() => setChangerCodeVolontaire(false)}
+        onAnnuler={() => setChangerCodeVolontaire(false)}
+      />
+    );
+  }
+
+  if (!fiche) return <Chargement texte="Ouverture de votre espace…" />;
+
+  const commun = { fiche, structureId: session.structureId, onNavigate: setPage };
+  let contenu;
+  switch (page) {
+    case 'agenda': contenu = <AgendaPage agenda={agenda} />; break;
+    case 'messages': contenu = <MessagesPage {...commun} messages={messages} />; break;
+    case 'documents': contenu = <DocumentsPage messages={messages} charge={messagesCharges} />; break;
+    case 'profil':
+      contenu = (
+        <ProfilPage
+          {...commun}
+          onChangerCode={() => setChangerCodeVolontaire(true)}
+          onConfidentialite={() => setVoirConfidentialite(true)}
+        />
+      );
+      break;
+    default: contenu = <AccueilPage {...commun} agenda={agenda} nonLus={nonLus} />;
   }
 
   return (
     <div className="app-root">
-      {renderPage()}
-      <BottomNav active={page} onChange={setPage} ben={ben} />
+      {contenu}
+      <BarreNavigation active={page} onChange={setPage} nonLus={nonLus} />
     </div>
   );
 }
-
