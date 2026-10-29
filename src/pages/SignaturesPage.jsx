@@ -51,6 +51,7 @@ export default function SignaturesPage({ onAttente }) {
   const [ouvert, setOuvert] = useState(null);
   const [image, setImage] = useState(null);
   const [lu, setLu] = useState(false);
+  const [commentaire, setCommentaire] = useState('');
   const [envoi, setEnvoi] = useState(false);
   const [info, setInfo] = useState('');
 
@@ -68,14 +69,14 @@ export default function SignaturesPage({ onAttente }) {
   };
   useEffect(() => { charger(); }, []);
 
-  const ouvrir = (d) => { setOuvert(d); setImage(null); setLu(false); setInfo(''); window.scrollTo?.(0, 0); };
+  const ouvrir = (d) => { setOuvert(d); setImage(null); setLu(false); setCommentaire(''); setInfo(''); window.scrollTo?.(0, 0); };
 
   const signer = async () => {
     if (!image || !lu) return;
     setEnvoi(true);
     setErreur('');
     try {
-      await signerDocument({ id: ouvert.id, image, consentement: true, contenuHash: ouvert.contenuHash });
+      await signerDocument({ id: ouvert.id, image, consentement: true, contenuHash: ouvert.contenuHash, commentaire: commentaire.trim() });
       setOuvert(null);
       setInfo('Merci, votre signature a bien été enregistrée.');
       await charger();
@@ -96,6 +97,7 @@ export default function SignaturesPage({ onAttente }) {
         {dejaSigne ? (
           <div style={{ ...styles.carte, borderColor: '#15803d' }}>
             <strong style={{ color: '#15803d' }}>✔ Vous avez signé ce document le {dateFr(ouvert.signatures.beneficiaire.signeLeIso)}.</strong>
+            {ouvert.signatures.beneficiaire.commentaire ? <p style={{ fontSize: 14, fontStyle: 'italic', margin: '8px 0 0' }}>💬 « {ouvert.signatures.beneficiaire.commentaire} »</p> : null}
             {ouvert.signatures.beneficiaire.image ? <img src={ouvert.signatures.beneficiaire.image} alt="Votre signature" style={{ display: 'block', maxWidth: 220, marginTop: 8 }} /> : null}
             <p style={{ fontSize: 14, margin: '8px 0 0' }}>
               {(ouvert.signataires || []).filter((s) => s.role !== 'beneficiaire').map((s) => (ouvert.signatures?.[s.cle] ? `✔ ${s.nom} a signé le ${dateFr(ouvert.signatures[s.cle].signeLeIso)}` : `… En attente de la signature de ${s.nom}`)).join(' · ')}
@@ -107,6 +109,14 @@ export default function SignaturesPage({ onAttente }) {
               <input type="checkbox" checked={lu} onChange={(e) => setLu(e.target.checked)} style={{ width: 22, height: 22, marginTop: 1 }} />
               <span>J'ai lu ce document en entier et je le signe électroniquement.</span>
             </label>
+            {ouvert.type === 'evaluation' ? (
+              <label style={{ display: 'block', fontSize: 15, marginBottom: 12 }}>
+                💬 Mon commentaire (facultatif)
+                <textarea rows={3} maxLength={1500} value={commentaire} onChange={(e) => setCommentaire(e.target.value)}
+                  placeholder="Ce que je pense de mon évaluation, ce que je veux travailler…"
+                  style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 6, padding: 10, fontSize: 15, borderRadius: 10, border: '1px solid #cbd5e1', font: 'inherit' }} />
+              </label>
+            ) : null}
             <PaveSignature onChange={setImage} />
             {erreur ? <p style={{ color: '#b91c1c', fontSize: 14 }}>{erreur}</p> : null}
             <button type="button" disabled={!image || !lu || envoi} onClick={signer} style={{ ...styles.boutonPrincipal, opacity: !image || !lu || envoi ? 0.5 : 1 }}>
