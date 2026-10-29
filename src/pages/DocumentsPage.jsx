@@ -37,7 +37,7 @@ function Document({ item }) {
   );
 }
 
-export default function DocumentsPage({ messages, charge }) {
+export default function DocumentsPage({ messages, charge, aSigner = 0, onSignatures }) {
   const docs = useMemo(() => {
     const vus = new Map();
     messages.filter((m) => m.authorType === 'professional').forEach((m) => {
@@ -75,6 +75,18 @@ export default function DocumentsPage({ messages, charge }) {
         <h1>Documents</h1>
         <p>Pièces et documents partagés par votre structure</p>
       </div>
+
+      {onSignatures ? (
+        <button type="button" className="card" onClick={onSignatures}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, width: 'calc(100% - 32px)', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit', marginTop: 12, border: `2px solid ${aSigner ? '#f59e0b' : 'var(--border)'}`, background: aSigner ? '#fffbeb' : undefined }}>
+          <span style={{ fontSize: 24 }} aria-hidden="true">✍️</span>
+          <span style={{ flex: 1 }}>
+            <strong style={{ display: 'block' }}>Documents à signer</strong>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{aSigner ? `${aSigner} en attente de votre signature` : 'Contrat d’engagement, évaluations signées'}</span>
+          </span>
+          <span aria-hidden="true">›</span>
+        </button>
+      ) : null}
 
       {!charge ? <p style={{ textAlign: 'center', marginTop: 30 }}>Chargement…</p> : null}
 

@@ -72,6 +72,14 @@ export function demanderNouveauCode(structureId, nomComplet) {
   return appeler('demanderNouveauCode', { structureId, nomComplet });
 }
 
+// Signature électronique : tout passe par le serveur (preuve infalsifiable)
+export function mesSignatures() {
+  return appeler('mesSignatures', {});
+}
+export function signerDocument(donnees) {
+  return appeler('signerDocument', donnees);
+}
+
 export function seDeconnecter() {
   return signOut(auth);
 }

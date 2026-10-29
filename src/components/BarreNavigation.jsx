@@ -9,7 +9,7 @@ const ENTREES = [
   { id: 'profil', label: 'Profil', Icon: User },
 ];
 
-export default function BarreNavigation({ active, onChange, nonLus }) {
+export default function BarreNavigation({ active, onChange, nonLus, aSigner = 0 }) {
   return (
     <nav className="bottom-nav" aria-label="Navigation principale">
       {ENTREES.map(({ id, label, Icon }) => (
@@ -24,6 +24,9 @@ export default function BarreNavigation({ active, onChange, nonLus }) {
           <span>{label}</span>
           {id === 'messages' && nonLus > 0 ? (
             <span className="nav-dot" aria-label={`${nonLus} message${nonLus > 1 ? 's' : ''} non lu${nonLus > 1 ? 's' : ''}`} />
+          ) : null}
+          {id === 'documents' && aSigner > 0 ? (
+            <span className="nav-dot" style={{ background: '#f59e0b' }} aria-label={`${aSigner} document${aSigner > 1 ? 's' : ''} à signer`} />
           ) : null}
         </button>
       ))}
