@@ -26,6 +26,8 @@ export default function App() {
   const [voirConfidentialite, setVoirConfidentialite] = useState(false);
   const [changerCodeVolontaire, setChangerCodeVolontaire] = useState(false);
   const [aSigner, setASigner] = useState(0);
+  // Message en cours d'écriture : gardé en mémoire (pas sur le téléphone) pendant la navigation
+  const [brouillon, setBrouillon] = useState('');
 
   useEffect(() => {
     nettoyerAnciennesDonnees();
@@ -36,6 +38,7 @@ export default function App() {
         setAgenda([]);
         setMessages([]);
         setMessagesCharges(false);
+        setBrouillon('');
         setPage('accueil');
       }
     });
@@ -118,8 +121,8 @@ export default function App() {
   let contenu;
   switch (page) {
     case 'agenda': contenu = <AgendaPage agenda={agenda} />; break;
-    case 'messages': contenu = <MessagesPage {...commun} messages={messages} />; break;
-    case 'documents': contenu = <DocumentsPage messages={messages} charge={messagesCharges} aSigner={aSigner} onSignatures={() => setPage('signatures')} />; break;
+    case 'messages': contenu = <MessagesPage {...commun} messages={messages} brouillon={brouillon} onBrouillon={setBrouillon} />; break;
+    case 'documents': contenu = <DocumentsPage {...commun} messages={messages} charge={messagesCharges} aSigner={aSigner} onSignatures={() => setPage('signatures')} />; break;
     case 'signatures': contenu = <SignaturesPage onAttente={setASigner} />; break;
     case 'profil':
       contenu = (

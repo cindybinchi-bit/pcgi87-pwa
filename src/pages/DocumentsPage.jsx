@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
-import { FileText, FileCheck, FileClock, Download, FolderOpen } from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { FileText, FileCheck, FileClock, Download, FolderOpen, Upload, Send } from 'lucide-react';
 import { urlSure } from '../utils.js';
+import { CATEGORIES_DEPOT } from '../donnees.js';
+import FenetreDepot from '../components/FenetreDepot.jsx';
 
 // Mêmes dossiers que l'application bureau (Secrétariat > Dossiers & envois)
 const DOSSIERS = {
@@ -37,7 +39,40 @@ function Document({ item }) {
   );
 }
 
-export default function DocumentsPage({ messages, charge, aSigner = 0, onSignatures }) {
+export default function DocumentsPage({ fiche, structureId, messages, charge, aSigner = 0, onSignatures }) {
+  const [depot, setDepot] = useState(null); // null | { fichier }
+  const [survol, setSurvol] = useState(false);
+  const [envoye, setEnvoye] = useState('');
+  const compteur = useRef(0);
+
+  // Documents que j'ai envoyés moi-même
+  const mesEnvois = useMemo(() => messages
+    .filter((m) => m.authorType === 'beneficiary' && urlSure(m.attachment?.url))
+    .map((m) => ({
+      id: m.id,
+      title: m.attachment.name || 'Document',
+      url: urlSure(m.attachment.url),
+      categorie: CATEGORIES_DEPOT.find((c) => c.id === m.attachment.categorie)?.label.replace(/\s*\(.*\)$/, '') || 'Document',
+      date: m.createdAt,
+      lu: Boolean(m.readAt),
+    }))
+    .sort((a, b) => String(b.date).localeCompare(String(a.date))), [messages]);
+
+  const avecFichiers = (e) => Array.from(e.dataTransfer?.types || []).includes('Files');
+  const glisser = {
+    onDragEnter: (e) => { if (!avecFichiers(e)) return; e.preventDefault(); compteur.current += 1; setSurvol(true); },
+    onDragOver: (e) => { if (avecFichiers(e)) e.preventDefault(); },
+    onDragLeave: () => { compteur.current = Math.max(0, compteur.current - 1); if (!compteur.current) setSurvol(false); },
+    onDrop: (e) => {
+      if (!avecFichiers(e)) return;
+      e.preventDefault();
+      compteur.current = 0;
+      setSurvol(false);
+      const f = e.dataTransfer.files?.[0];
+      if (f) { setEnvoye(''); setDepot({ fichier: f }); }
+    },
+  };
+
   const docs = useMemo(() => {
     const vus = new Map();
     messages.filter((m) => m.authorType === 'professional').forEach((m) => {
@@ -70,11 +105,25 @@ export default function DocumentsPage({ messages, charge, aSigner = 0, onSignatu
     .filter((g) => g.items.length);
 
   return (
-    <main className="page-content">
+    <main className="page-content" {...glisser}>
       <div className="page-header">
         <h1>Documents</h1>
-        <p>Pièces et documents partagés par votre structure</p>
+        <p>Vos documents et ceux de votre structure</p>
       </div>
+
+      <div
+        className={`depot-zone ${survol ? 'survol' : ''}`}
+        role="button"
+        tabIndex={0}
+        onClick={() => { setEnvoye(''); setDepot({ fichier: null }); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEnvoye(''); setDepot({ fichier: null }); } }}
+      >
+        <span className="depot-zone-icone"><Upload size={26} aria-hidden="true" /></span>
+        <strong>{survol ? 'Lâchez le fichier ici' : 'Envoyer un document'}</strong>
+        <small>Photo, PDF ou Word · touchez ici{' '}<span className="depot-zone-ordi">ou glissez un fichier</span></small>
+      </div>
+
+      {envoye ? <div className="info-box" role="status" style={{ margin: '0 16px 12px' }}>✓ « {envoye} » a bien été envoyé à votre référent(e).</div> : null}
 
       {onSignatures ? (
         <button type="button" className="card" onClick={onSignatures}
@@ -90,7 +139,7 @@ export default function DocumentsPage({ messages, charge, aSigner = 0, onSignatu
 
       {!charge ? <p style={{ textAlign: 'center', marginTop: 30 }}>Chargement…</p> : null}
 
-      {charge && !docs.length && !convocations.length ? (
+      {charge && !docs.length && !convocations.length && !mesEnvois.length ? (
         <div className="empty-state" style={{ marginTop: 40 }}>
           <FolderOpen size={40} aria-hidden="true" />
           <p>Aucun document pour l'instant.</p>
@@ -121,12 +170,44 @@ export default function DocumentsPage({ messages, charge, aSigner = 0, onSignatu
         </React.Fragment>
       ))}
 
+      {mesEnvois.length ? (
+        <>
+          <div className="section-label">Mes envois ({mesEnvois.length})</div>
+          <div className="card" style={{ padding: 0 }}>
+            {mesEnvois.map((d) => (
+              <div key={d.id} className="doc-item">
+                <div className="doc-icon" style={{ background: '#e0e7ff' }}><Send size={18} color="#4338ca" aria-hidden="true" /></div>
+                <div className="doc-info">
+                  <strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title}</strong>
+                  <p>{d.categorie} · envoyé le {date(d.date)} · <span style={{ color: d.lu ? '#0e9f6e' : 'var(--text-subtle)' }}>{d.lu ? '✓✓ Vu' : '✓ Envoyé'}</span></p>
+                </div>
+                <div className="doc-action">
+                  <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', color: 'var(--blue-700)', fontWeight: 500 }}>
+                    <Download size={15} aria-hidden="true" /> Ouvrir
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
+
       <div className="card">
         <p style={{ fontSize: '0.82rem' }}>
           🔒 Ces documents sont personnels. Si vous les téléchargez sur un téléphone partagé,
           pensez à les supprimer ensuite.
         </p>
       </div>
+
+      {depot ? (
+        <FenetreDepot
+          fiche={fiche}
+          structureId={structureId}
+          fichierInitial={depot.fichier}
+          onFerme={() => setDepot(null)}
+          onEnvoye={(nom) => { setDepot(null); setEnvoye(nom); }}
+        />
+      ) : null}
     </main>
   );
 }

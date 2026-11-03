@@ -16,6 +16,7 @@ import {
 } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDBEvh1e3M7XwfgMxFIEO0PcZydC8kliSg',
@@ -33,6 +34,7 @@ export const auth = initializeAuth(app, {
   persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence],
 });
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 const functions = getFunctions(app, 'europe-west3');
 
 /** Messages d'erreur compréhensibles pour les bénéficiaires. */

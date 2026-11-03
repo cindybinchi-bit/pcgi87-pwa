@@ -11,6 +11,7 @@ function erreurCode(code) {
 export default function ChoixCodePage({ obligatoire, onTermine, onAnnuler }) {
   const [code, setCode] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [voirCode, setVoirCode] = useState(false);
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
 
@@ -54,11 +55,21 @@ export default function ChoixCodePage({ obligatoire, onTermine, onAnnuler }) {
         <form onSubmit={valider} noValidate>
           <div className="form-field">
             <label htmlFor="nouveau">Nouveau code</label>
-            <input id="nouveau" type="password" value={code} onChange={(e) => setCode(e.target.value)} autoComplete="new-password" maxLength={64} autoFocus />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input id="nouveau" type={voirCode ? 'text' : 'password'} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="new-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={64} autoFocus style={{ flex: 1 }} />
+              <button type="button" className="btn btn-ghost" onClick={() => setVoirCode((v) => !v)} aria-pressed={voirCode} aria-controls="nouveau confirmation" style={{ padding: '0 12px' }}>
+                {voirCode ? 'Masquer' : 'Voir'}
+              </button>
+            </div>
           </div>
           <div className="form-field">
             <label htmlFor="confirmation">Retapez le code</label>
-            <input id="confirmation" type="password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} autoComplete="new-password" maxLength={64} />
+            <input id="confirmation" type={voirCode ? 'text' : 'password'} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} autoComplete="new-password" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={64} />
+            {confirmation ? (
+              <small style={{ display: 'block', marginTop: 4, fontSize: '0.75rem', color: code.trim() === confirmation.trim() ? 'var(--green-700)' : 'var(--red-700)' }}>
+                {code.trim() === confirmation.trim() ? '✓ Les deux codes sont identiques' : '✗ Les deux codes ne sont pas encore identiques'}
+              </small>
+            ) : null}
           </div>
           <button className="btn btn-primary mt-8" type="submit" disabled={enCours}>
             {enCours ? 'Enregistrement…' : 'Valider mon code'}

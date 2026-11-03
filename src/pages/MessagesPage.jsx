@@ -1,7 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Send, MessageSquareOff, FileText, Paperclip } from 'lucide-react';
 import { envoyerMessage, marquerCommeLus } from '../donnees.js';
 import { urlSure } from '../utils.js';
+import FenetreDepot from '../components/FenetreDepot.jsx';
+
+// Sur téléphone, « Entrée » fait un retour à la ligne ; on envoie avec le bouton.
+const ECRAN_TACTILE = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
 function dateHeure(v) {
   const d = new Date(v);
@@ -21,12 +25,36 @@ const styleLien = {
   textDecoration: 'none', border: '1px solid #bfdbfe', wordBreak: 'break-word',
 };
 
-export default function MessagesPage({ fiche, structureId, messages }) {
-  const [texte, setTexte] = useState('');
+export default function MessagesPage({ fiche, structureId, messages, brouillon = '', onBrouillon }) {
+  // Le texte en cours est gardé par App : il reste là quand on change d'onglet.
+  const texte = brouillon;
+  const setTexte = (v) => onBrouillon?.(v);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
+  const [depot, setDepot] = useState(null); // null | { fichier }
+  const [hauteurBarre, setHauteurBarre] = useState(64);
   const bas = useRef(null);
   const zone = useRef(null);
+  const barre = useRef(null);
+
+  // La zone d'écriture grandit avec le texte (jusqu'à 40 % de l'écran, puis défile).
+  useLayoutEffect(() => {
+    const el = zone.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const max = Math.round(window.innerHeight * 0.4);
+    el.style.height = `${Math.min(el.scrollHeight + 2, max)}px`;
+    el.style.overflowY = el.scrollHeight + 2 > max ? 'auto' : 'hidden';
+  }, [texte]);
+
+  // Les derniers messages ne doivent jamais être cachés derrière la zone d'écriture.
+  useEffect(() => {
+    const el = barre.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const obs = new ResizeObserver(() => setHauteurBarre(el.offsetHeight));
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const aMarquer = messages.some((m) => m.authorType === 'professional' && !m.readAt);
   useEffect(() => {
@@ -53,7 +81,11 @@ export default function MessagesPage({ fiche, structureId, messages }) {
   }
 
   return (
-    <main className="page-content" style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom) + 76px)' }}>
+    <main
+      className="page-content"
+      onDragOver={(e) => { if (e.dataTransfer?.types?.includes('Files')) e.preventDefault(); }}
+      onDrop={(e) => { const f = e.dataTransfer?.files?.[0]; if (f) { e.preventDefault(); setDepot({ fichier: f }); } }}
+      style={{ paddingBottom: `calc(var(--nav-height) + var(--safe-bottom) + ${hauteurBarre + 12}px)` }}>
       <div className="page-header">
         <h1>Messages</h1>
         <p>Échanges avec votre référent(e)</p>
@@ -107,7 +139,10 @@ export default function MessagesPage({ fiche, structureId, messages }) {
 
       {erreur ? <div className="error-box" role="alert" style={{ margin: '0 16px' }}>{erreur}</div> : null}
 
-      <div className="input-bar">
+      <div className="input-bar" ref={barre}>
+        <button type="button" className="joindre-btn" onClick={() => setDepot({ fichier: null })} aria-label="Envoyer un document ou une photo" title="Envoyer un document">
+          <Paperclip size={20} aria-hidden="true" />
+        </button>
         <label htmlFor="message" className="sr-only">Votre message</label>
         <textarea
           id="message"
@@ -116,13 +151,26 @@ export default function MessagesPage({ fiche, structureId, messages }) {
           placeholder="Écrire un message…"
           value={texte}
           maxLength={5000}
+          enterKeyHint={ECRAN_TACTILE ? 'enter' : 'send'}
           onChange={(e) => setTexte(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); envoyer(); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !ECRAN_TACTILE) { e.preventDefault(); envoyer(); }
+          }}
         />
         <button type="button" className="send-btn" onClick={envoyer} disabled={!texte.trim() || envoi} aria-label="Envoyer">
           <Send size={18} aria-hidden="true" />
         </button>
       </div>
+
+      {depot ? (
+        <FenetreDepot
+          fiche={fiche}
+          structureId={structureId}
+          fichierInitial={depot.fichier}
+          onFerme={() => setDepot(null)}
+          onEnvoye={() => setDepot(null)}
+        />
+      ) : null}
     </main>
   );
 }
