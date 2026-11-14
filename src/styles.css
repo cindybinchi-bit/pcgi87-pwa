@@ -652,3 +652,41 @@ body {
 .calendrier-points { display: flex; gap: 3px; height: 6px; }
 .calendrier-points i { width: 6px; height: 6px; border-radius: 50%; display: block; }
 .calendrier-auj { display: block; margin: 8px auto 0; }
+
+/* ── Agenda : ajouts du salarié (congés, rendez-vous) ── */
+.agenda-entete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.agenda-ajouter { width: auto; padding: 9px 14px; font-size: 0.85rem; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; }
+.agenda-ajouter-jour {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: calc(100% - 32px); margin: 0 16px 12px; padding: 12px;
+  border: 1.5px dashed var(--blue-100); border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.7); color: var(--blue-700); font-size: 0.85rem; font-weight: 500;
+}
+.agenda-ajouter-jour:active { background: var(--blue-50); }
+.agenda-retirer { display: flex; margin-top: 6px; color: var(--red-700); }
+.agenda-confirmer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 0.82rem; }
+.agenda-confirmer .btn { width: auto; padding: 6px 16px; font-size: 0.82rem; }
+.ajout-choix { display: grid; gap: 10px; margin-bottom: 4px; }
+.ajout-carte {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: white;
+}
+.ajout-carte:active { background: var(--blue-50); }
+.ajout-carte strong { display: block; font-size: 0.98rem; color: var(--navy); }
+.ajout-carte small { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.ajout-icone { width: 48px; height: 48px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ajout-deux { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ajout-deux .form-field input { width: 100%; min-width: 0; }
+.ajout-resume { font-size: 0.85rem; font-weight: 500; color: var(--blue-800); margin: -4px 0 12px; }
+.ajout-retour { display: flex; margin: 10px auto 0; }
+
+/* ── Messagerie : choix du destinataire ── */
+.canal-bar { display: flex; gap: 8px; padding: 12px 16px 4px; overflow-x: auto; scrollbar-width: none; }
+.canal-bar::-webkit-scrollbar { display: none; }
+.canal-pill { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+.canal-compte {
+  min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  background: #e24b4a; color: white; font-size: 0.68rem; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.canal-secret { margin: 6px 16px 0; font-size: 0.75rem; color: var(--text-muted); }

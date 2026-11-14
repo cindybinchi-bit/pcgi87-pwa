@@ -13,13 +13,27 @@ import {
   setDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { ref as refFichier, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase.js';
 
+/**
+ * Les trois messageries du salarié. Chacune est un fil séparé :
+ * seuls les destinataires indiqués peuvent le lire.
+ */
+export const CANAUX = [
+  { id: 'cip', court: 'Ma CIP', a: 'à ma CIP', label: 'Ma CIP / référent(e)', aVous: 'à votre référent(e)', secret: 'Lu uniquement par votre référent(e) (CIP).' },
+  { id: 'secretariat', court: 'Secrétariat / RH', a: 'au secrétariat / RH', label: 'Secrétariat / RH', aVous: 'au secrétariat / RH', secret: 'Lu uniquement par le secrétariat et les RH de votre structure.' },
+  { id: 'encadrant', court: 'Encadrant(e)', a: 'à mon encadrant(e)', label: 'Mon encadrant(e) technique', aVous: 'à votre encadrant(e) technique', secret: 'Lu uniquement par votre encadrant(e) technique.' },
+];
+export const canalParId = (id) => CANAUX.find((c) => c.id === id) || CANAUX[0];
+
 /** Doit rester identique au calcul de l'application bureau. */
-export function idConversation(benId) {
+export function idConversation(benId, canal = 'cip', structureId = '') {
+  if (canal === 'secretariat') return `benef_secretariat_${structureId}_${benId}`;
+  if (canal === 'encadrant') return `benef_encadrant_${structureId}_${benId}`;
   return `benef_conversation_${benId}`;
 }
 
@@ -51,8 +65,8 @@ export function suivreAgenda(structureId, benId, callback, surErreur) {
   return () => { u1(); u2(); };
 }
 
-export function suivreMessages(benId, callback, surErreur) {
-  const ref = query(collection(db, 'conversations', idConversation(benId), 'messages'), orderBy('createdAt', 'asc'));
+export function suivreMessages(convId, callback, surErreur) {
+  const ref = query(collection(db, 'conversations', convId, 'messages'), orderBy('createdAt', 'asc'));
   return onSnapshot(ref, (snap) => {
     callback(snap.docs.map((d) => {
       const data = d.data();
@@ -66,8 +80,8 @@ export function suivreMessages(benId, callback, surErreur) {
   }, surErreur);
 }
 
-export async function envoyerMessage(fiche, structureId, contenu, pieceJointe = null) {
-  const convId = idConversation(fiche.id);
+export async function envoyerMessage(fiche, structureId, contenu, pieceJointe = null, canal = 'cip') {
+  const convId = idConversation(fiche.id, canal, structureId);
   const nom = `${fiche.prenom || ''} ${fiche.nom || ''}`.trim();
   await addDoc(collection(db, 'conversations', convId, 'messages'), {
     authorType: 'beneficiary',
@@ -86,7 +100,74 @@ export async function envoyerMessage(fiche, structureId, contenu, pieceJointe = 
     structureId,
     scope: 'beneficiary',
     updatedAt: serverTimestamp(),
+    // Le fil de la CIP garde exactement son ancien format.
+    ...(canal !== 'cip' ? { canal } : {}),
   }, { merge: true });
+}
+
+/* ── Agenda : ce que le salarié ajoute lui-même ── */
+
+/** Type d'événement utilisé pour un rendez-vous socio-professionnel extérieur. */
+export const TYPE_RDV_SOCIOPRO = 'rdv_exterieur';
+
+export const MOTIFS_RDV = [
+  { id: 'france_travail', label: 'France Travail' },
+  { id: 'mission_locale', label: 'Mission locale' },
+  { id: 'social', label: 'Assistant(e) social(e)' },
+  { id: 'administratif', label: 'Démarche administrative (CAF, mairie, banque…)' },
+  { id: 'logement', label: 'Logement' },
+  { id: 'formation', label: 'Formation' },
+  { id: 'embauche', label: 'Entretien d\'embauche' },
+  { id: 'autre', label: 'Autre rendez-vous' },
+];
+
+const nomComplet = (fiche) => `${fiche.prenom || ''} ${fiche.nom || ''}`.trim();
+
+function baseEvenement(fiche, structureId) {
+  return {
+    beneficiaryId: fiche.id,
+    beneficiaryName: nomComplet(fiche),
+    structureId,
+    scope: 'beneficiary', // indispensable : l'appli bureau filtre sur ce champ
+    source: 'beneficiaire', // ajouté par le salarié depuis son téléphone
+    createdAt: serverTimestamp(),
+    createdBy: nomComplet(fiche),
+  };
+}
+
+/** Demande de congé payé : visible par la structure, « en attente » jusqu'à sa réponse. */
+export function demanderConge(fiche, structureId, { du, au, commentaire }) {
+  return addDoc(collection(db, 'structures', structureId, 'agendas'), {
+    ...baseEvenement(fiche, structureId),
+    type: 'conge',
+    title: 'Congé payé (demande)',
+    startAt: `${du}T00:00`,
+    endAt: `${au || du}T23:59`,
+    allDay: true,
+    notes: String(commentaire || '').trim().slice(0, 500),
+    statut: 'en_attente',
+  });
+}
+
+/** Rendez-vous socio-professionnel : la CIP en est informée. */
+export function ajouterRendezVous(fiche, structureId, { motif, precision, jour, debut, fin, lieu, notes }) {
+  const libelle = MOTIFS_RDV.find((m) => m.id === motif)?.label.replace(/\s*\(.*\)$/, '') || 'Rendez-vous';
+  const detail = String(precision || '').trim().slice(0, 80);
+  return addDoc(collection(db, 'structures', structureId, 'agendas'), {
+    ...baseEvenement(fiche, structureId),
+    type: TYPE_RDV_SOCIOPRO,
+    motif,
+    title: motif === 'autre' && detail ? detail : `${libelle}${detail && motif !== 'autre' ? ` — ${detail}` : ''}`,
+    startAt: debut ? `${jour}T${debut}` : jour,
+    endAt: debut && fin ? `${jour}T${fin}` : (debut ? `${jour}T${debut}` : jour),
+    lieu: String(lieu || '').trim().slice(0, 150),
+    notes: String(notes || '').trim().slice(0, 500),
+  });
+}
+
+/** Le salarié retire ce qu'il a ajouté lui-même (demande pas encore traitée, RDV). */
+export function retirerEvenement(structureId, id) {
+  return deleteDoc(doc(db, 'structures', structureId, 'agendas', id));
 }
 
 /* ── Dépôt de documents par le bénéficiaire ── */
@@ -137,10 +218,10 @@ function nomPropre(nom) {
 
 /**
  * Envoie le fichier dans Storage (dossier propre au bénéficiaire),
- * puis l'annonce au référent dans la messagerie.
+ * puis l'annonce dans la messagerie choisie (référent par défaut).
  * onProgression(0..100) est appelé pendant l'envoi.
  */
-export async function deposerDocument({ fiche, structureId, fichier, categorie, commentaire, onProgression }) {
+export async function deposerDocument({ fiche, structureId, fichier, categorie, commentaire, onProgression, canal = 'cip' }) {
   const probleme = verifierFichier(fichier);
   if (probleme) throw new Error(probleme);
   const type = typeDuFichier(fichier);
@@ -167,12 +248,11 @@ export async function deposerDocument({ fiche, structureId, fichier, categorie, 
     type,
     size: fichier.size,
     categorie: categorie || 'autre',
-  });
+  }, canal);
 }
 
-/** Accusé de lecture des messages du référent. */
-export async function marquerCommeLus(benId) {
-  const convId = idConversation(benId);
+/** Accusé de lecture des messages reçus dans un fil. */
+export async function marquerCommeLus(convId) {
   const snap = await getDocs(query(
     collection(db, 'conversations', convId, 'messages'),
     where('authorType', '==', 'professional'),

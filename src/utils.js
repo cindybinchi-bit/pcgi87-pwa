@@ -74,8 +74,23 @@ export function libelleType(type) {
     prestation: 'Prestation extérieure',
     absence: 'Absence',
     cp: 'Congé payé',
+    conge: 'Congé payé',
+    repos: 'Jour de repos',
+    absence_sociopro: 'Absence',
+    rdv_exterieur: 'RDV extérieur',
   };
   return map[type] || type || 'Événement';
+}
+
+/** Congé refusé par la structure : ne compte plus comme « à venir ». */
+export const estRefuse = (e) => e?.statut === 'refuse';
+
+/** État d'une demande de congé faite par le salarié (null si ce n'est pas une demande). */
+export function etatDemande(e) {
+  if (e?.type !== 'conge' || e?.source !== 'beneficiaire') return null;
+  if (e.statut === 'accepte' || e.statut === 'valide') return { cle: 'accepte', texte: '✅ Accepté', classe: 'badge-green' };
+  if (e.statut === 'refuse') return { cle: 'refuse', texte: '❌ Refusé', classe: 'badge-red' };
+  return { cle: 'attente', texte: '⏳ En attente de réponse', classe: 'badge-amber' };
 }
 
 export function urlSure(url) {

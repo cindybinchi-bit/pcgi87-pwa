@@ -42,7 +42,7 @@ function Document({ item }) {
 export default function DocumentsPage({ fiche, structureId, messages, charge, aSigner = 0, onSignatures }) {
   const [depot, setDepot] = useState(null); // null | { fichier }
   const [survol, setSurvol] = useState(false);
-  const [envoye, setEnvoye] = useState('');
+  const [envoye, setEnvoye] = useState(null); // null | { nom, a }
   const compteur = useRef(0);
 
   // Documents que j'ai envoyés moi-même
@@ -69,7 +69,7 @@ export default function DocumentsPage({ fiche, structureId, messages, charge, aS
       compteur.current = 0;
       setSurvol(false);
       const f = e.dataTransfer.files?.[0];
-      if (f) { setEnvoye(''); setDepot({ fichier: f }); }
+      if (f) { setEnvoye(null); setDepot({ fichier: f }); }
     },
   };
 
@@ -115,15 +115,15 @@ export default function DocumentsPage({ fiche, structureId, messages, charge, aS
         className={`depot-zone ${survol ? 'survol' : ''}`}
         role="button"
         tabIndex={0}
-        onClick={() => { setEnvoye(''); setDepot({ fichier: null }); }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEnvoye(''); setDepot({ fichier: null }); } }}
+        onClick={() => { setEnvoye(null); setDepot({ fichier: null }); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEnvoye(null); setDepot({ fichier: null }); } }}
       >
         <span className="depot-zone-icone"><Upload size={26} aria-hidden="true" /></span>
         <strong>{survol ? 'Lâchez le fichier ici' : 'Envoyer un document'}</strong>
         <small>Photo, PDF ou Word · touchez ici{' '}<span className="depot-zone-ordi">ou glissez un fichier</span></small>
       </div>
 
-      {envoye ? <div className="info-box" role="status" style={{ margin: '0 16px 12px' }}>✓ « {envoye} » a bien été envoyé à votre référent(e).</div> : null}
+      {envoye ? <div className="info-box" role="status" style={{ margin: '0 16px 12px' }}>✓ « {envoye.nom} » a bien été envoyé {envoye.a}.</div> : null}
 
       {onSignatures ? (
         <button type="button" className="card" onClick={onSignatures}
@@ -205,7 +205,7 @@ export default function DocumentsPage({ fiche, structureId, messages, charge, aS
           structureId={structureId}
           fichierInitial={depot.fichier}
           onFerme={() => setDepot(null)}
-          onEnvoye={(nom) => { setDepot(null); setEnvoye(nom); }}
+          onEnvoye={(nom, dest) => { setDepot(null); setEnvoye({ nom, a: dest?.aVous || 'à votre référent(e)' }); }}
         />
       ) : null}
     </main>

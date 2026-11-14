@@ -49,8 +49,8 @@ export default function ConfidentialitePage({ structureId, onRetour }) {
       <Bloc titre="À quoi servent vos données ?">
         <ul>
           <li>suivre votre parcours d'insertion avec votre référent(e) ;</li>
-          <li>organiser vos rendez-vous et ateliers ;</li>
-          <li>échanger des messages avec votre référent(e) ;</li>
+          <li>organiser vos rendez-vous, ateliers et congés (y compris ceux que vous ajoutez vous-même) ;</li>
+          <li>échanger des messages avec votre référent(e), le secrétariat / RH et votre encadrant(e) technique — chaque messagerie n'est lue que par son destinataire ;</li>
           <li>vous transmettre vos documents (contrats, bulletins de salaire, convocations).</li>
         </ul>
         <p>Elles sont utilisées dans le cadre de votre accompagnement ou de votre contrat, et pour les obligations légales de la structure.</p>

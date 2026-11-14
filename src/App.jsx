@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { suivreSession, seDeconnecter } from './firebase.js';
-import { suivreFiche, suivreAgenda, suivreMessages } from './donnees.js';
+import { suivreFiche, suivreAgenda, suivreMessages, idConversation, CANAUX } from './donnees.js';
 import { nettoyerAnciennesDonnees } from './utils.js';
 import Chargement from './components/Chargement.jsx';
 import BarreNavigation from './components/BarreNavigation.jsx';
@@ -15,19 +15,24 @@ import ConfidentialitePage from './pages/ConfidentialitePage.jsx';
 import SignaturesPage from './pages/SignaturesPage.jsx';
 import { mesSignatures } from './firebase.js';
 
+const FILS_VIDES = { cip: [], secretariat: [], encadrant: [] };
+
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = vérification en cours
   const [page, setPage] = useState('accueil');
   const [fiche, setFiche] = useState(null);
   const [agenda, setAgenda] = useState([]);
-  const [messages, setMessages] = useState([]);
+  // Trois messageries séparées : CIP, secrétariat / RH, encadrant(e) technique
+  const [fils, setFils] = useState(FILS_VIDES);
+  const [indisponibles, setIndisponibles] = useState({});
+  const [canal, setCanal] = useState('cip');
   const [messagesCharges, setMessagesCharges] = useState(false);
   const [avisConnexion, setAvisConnexion] = useState('');
   const [voirConfidentialite, setVoirConfidentialite] = useState(false);
   const [changerCodeVolontaire, setChangerCodeVolontaire] = useState(false);
   const [aSigner, setASigner] = useState(0);
-  // Message en cours d'écriture : gardé en mémoire (pas sur le téléphone) pendant la navigation
-  const [brouillon, setBrouillon] = useState('');
+  // Messages en cours d'écriture (un par messagerie) : gardés en mémoire, pas sur le téléphone
+  const [brouillons, setBrouillons] = useState({});
 
   useEffect(() => {
     nettoyerAnciennesDonnees();
@@ -36,9 +41,11 @@ export default function App() {
       if (!s) {
         setFiche(null);
         setAgenda([]);
-        setMessages([]);
+        setFils(FILS_VIDES);
+        setIndisponibles({});
+        setCanal('cip');
         setMessagesCharges(false);
-        setBrouillon('');
+        setBrouillons({});
         setPage('accueil');
       }
     });
@@ -63,8 +70,20 @@ export default function App() {
       }
     }, surErreur);
     const u2 = suivreAgenda(structureId, benId, setAgenda, surErreur);
-    const u3 = suivreMessages(benId, (list) => { setMessages(list); setMessagesCharges(true); }, surErreur);
-    return () => { u1(); u2(); u3(); };
+    const recevoir = (id) => (list) => {
+      setFils((f) => ({ ...f, [id]: list }));
+      setIndisponibles((i) => (i[id] ? { ...i, [id]: false } : i));
+      if (id === 'cip') setMessagesCharges(true);
+    };
+    const u3 = suivreMessages(idConversation(benId, 'cip', structureId), recevoir('cip'), surErreur);
+    // Nouvelles messageries : si la structure ne les a pas encore activées, on l'indique
+    // simplement dans l'onglet, sans fermer la session.
+    const autres = CANAUX.filter((c) => c.id !== 'cip').map((c) => suivreMessages(
+      idConversation(benId, c.id, structureId),
+      recevoir(c.id),
+      () => setIndisponibles((i) => ({ ...i, [c.id]: true })),
+    ));
+    return () => { u1(); u2(); u3(); autres.forEach((u) => u()); };
   }, [pret, session?.structureId, session?.benId]);
 
   // Documents en attente de ma signature (vérifié à l'ouverture, à chaque changement de page et toutes les 5 min)
@@ -79,10 +98,21 @@ export default function App() {
     return () => { actif = false; clearInterval(minuteur); };
   }, [pret, session?.benId, page]);
 
-  const nonLus = useMemo(
-    () => messages.filter((m) => m.authorType === 'professional' && !m.readAt).length,
-    [messages],
-  );
+  const nonLusParCanal = useMemo(() => Object.fromEntries(CANAUX.map((c) => [
+    c.id,
+    (fils[c.id] || []).filter((m) => m.authorType === 'professional' && !m.readAt).length,
+  ])), [fils]);
+  const nonLus = Object.values(nonLusParCanal).reduce((a, b) => a + b, 0);
+  const tousLesMessages = useMemo(() => CANAUX.flatMap((c) => fils[c.id] || []), [fils]);
+
+  // Depuis l'accueil ou la barre du bas : ouvrir directement la messagerie qui a du nouveau
+  function allerA(p) {
+    if (p === 'messages' && page !== 'messages') {
+      const avecNouveau = CANAUX.find((c) => nonLusParCanal[c.id] > 0);
+      if (avecNouveau) setCanal(avecNouveau.id);
+    }
+    setPage(p);
+  }
 
   if (session === undefined) return <Chargement />;
 
@@ -117,12 +147,25 @@ export default function App() {
 
   if (!fiche) return <Chargement texte="Ouverture de votre espace…" />;
 
-  const commun = { fiche, structureId: session.structureId, onNavigate: setPage };
+  const commun = { fiche, structureId: session.structureId, onNavigate: allerA };
   let contenu;
   switch (page) {
-    case 'agenda': contenu = <AgendaPage agenda={agenda} />; break;
-    case 'messages': contenu = <MessagesPage {...commun} messages={messages} brouillon={brouillon} onBrouillon={setBrouillon} />; break;
-    case 'documents': contenu = <DocumentsPage {...commun} messages={messages} charge={messagesCharges} aSigner={aSigner} onSignatures={() => setPage('signatures')} />; break;
+    case 'agenda': contenu = <AgendaPage {...commun} agenda={agenda} />; break;
+    case 'messages':
+      contenu = (
+        <MessagesPage
+          {...commun}
+          canal={canal}
+          onCanal={setCanal}
+          messages={fils[canal] || []}
+          nonLusParCanal={nonLusParCanal}
+          indisponible={Boolean(indisponibles[canal])}
+          brouillon={brouillons[canal] || ''}
+          onBrouillon={(v) => setBrouillons((b) => ({ ...b, [canal]: v }))}
+        />
+      );
+      break;
+    case 'documents': contenu = <DocumentsPage {...commun} messages={tousLesMessages} charge={messagesCharges} aSigner={aSigner} onSignatures={() => setPage('signatures')} />; break;
     case 'signatures': contenu = <SignaturesPage onAttente={setASigner} />; break;
     case 'profil':
       contenu = (
@@ -148,7 +191,7 @@ export default function App() {
     <div className="app-root">
       {banniereSignature}
       {contenu}
-      <BarreNavigation active={page === 'signatures' ? 'documents' : page} onChange={setPage} nonLus={nonLus} aSigner={aSigner} />
+      <BarreNavigation active={page === 'signatures' ? 'documents' : page} onChange={allerA} nonLus={nonLus} aSigner={aSigner} />
     </div>
   );
 }

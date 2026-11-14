@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { CalendarDays, MessageSquare, FileText, ChevronRight, Target } from 'lucide-react';
-import { formatDate, formatDateHeure, classeStatut, joursDepuis, libelleType, CONTACTS_STRUCTURES } from '../utils.js';
+import { formatDate, formatDateHeure, classeStatut, joursDepuis, libelleType, estRefuse, CONTACTS_STRUCTURES } from '../utils.js';
 
 const OUTIL_CV = 'https://ursdac-jpg.github.io/TRE-ERIP/#cv';
 
@@ -8,7 +8,7 @@ export default function AccueilPage({ fiche, structureId, agenda, nonLus, onNavi
   const aVenir = useMemo(() => {
     const maintenant = new Date().toISOString().slice(0, 10);
     return agenda
-      .filter((e) => (e.startAt || '') >= maintenant)
+      .filter((e) => (e.startAt || '') >= maintenant && !estRefuse(e))
       .sort((a, b) => String(a.startAt).localeCompare(String(b.startAt)));
   }, [agenda]);
   const prochain = aVenir[0];
@@ -62,7 +62,7 @@ export default function AccueilPage({ fiche, structureId, agenda, nonLus, onNavi
         </button>
         <button type="button" className="list-item" style={{ width: '100%', textAlign: 'left' }} onClick={() => onNavigate('messages')}>
           <div className="list-item-icon" style={{ background: '#faeeda' }}><MessageSquare size={20} color="var(--amber-700)" /></div>
-          <div className="list-item-content"><strong>Messages</strong><p>{nonLus ? `${nonLus} nouveau${nonLus > 1 ? 'x' : ''} message${nonLus > 1 ? 's' : ''}` : 'Échanger avec votre référent(e)'}</p></div>
+          <div className="list-item-content"><strong>Messages</strong><p>{nonLus ? `${nonLus} nouveau${nonLus > 1 ? 'x' : ''} message${nonLus > 1 ? 's' : ''}` : 'CIP, secrétariat / RH, encadrant(e)'}</p></div>
           <ChevronRight size={16} color="var(--text-subtle)" aria-hidden="true" />
         </button>
         <button type="button" className="list-item" style={{ width: '100%', textAlign: 'left' }} onClick={() => onNavigate('documents')}>

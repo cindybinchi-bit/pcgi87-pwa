@@ -33,7 +33,7 @@ export default function ProfilPage({ fiche, structureId, onNavigate, onChangerCo
       <div className="section-label">Sécurité et confidentialité</div>
       <div className="card" style={{ display: 'grid', gap: 10 }}>
         <button type="button" className="btn btn-secondary" onClick={() => onNavigate('messages')} style={{ justifyContent: 'flex-start' }}>
-          <MessageSquare size={18} aria-hidden="true" /> Contacter mon référent(e)
+          <MessageSquare size={18} aria-hidden="true" /> Écrire à ma structure
         </button>
         <button type="button" className="btn btn-secondary" onClick={onChangerCode} style={{ justifyContent: 'flex-start' }}>
           <KeyRound size={18} aria-hidden="true" /> Changer mon code d'accès

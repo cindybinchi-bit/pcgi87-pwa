@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, FileText, Image as ImageIcon, Upload } from 'lucide-react';
-import { CATEGORIES_DEPOT, ACCEPT_DEPOT, deposerDocument, verifierFichier } from '../donnees.js';
+import { CATEGORIES_DEPOT, ACCEPT_DEPOT, CANAUX, deposerDocument, verifierFichier } from '../donnees.js';
 
 function taille(o) {
   if (o < 1024 * 1024) return `${Math.max(1, Math.round(o / 1024))} Ko`;
@@ -10,8 +10,11 @@ function taille(o) {
 /**
  * Fenêtre « Envoyer un document » (en bas de l'écran).
  * - fichierInitial : fichier déjà choisi (glisser-déposer ou trombone), sinon on propose de le choisir.
+ * - canal : messagerie qui reçoit le document (si absent, la personne choisit le destinataire).
  */
-export default function FenetreDepot({ fiche, structureId, fichierInitial = null, onFerme, onEnvoye }) {
+export default function FenetreDepot({ fiche, structureId, fichierInitial = null, canal = '', onFerme, onEnvoye }) {
+  const [vers, setVers] = useState(canal || 'cip');
+  const destinataire = CANAUX.find((c) => c.id === vers) || CANAUX[0];
   const [fichier, setFichier] = useState(fichierInitial);
   const [categorie, setCategorie] = useState('');
   const [commentaire, setCommentaire] = useState('');
@@ -50,12 +53,12 @@ export default function FenetreDepot({ fiche, structureId, fichierInitial = null
     setErreur('');
     setProgression(0);
     try {
-      await deposerDocument({ fiche, structureId, fichier, categorie, commentaire, onProgression: setProgression });
-      onEnvoye?.(fichier.name);
+      await deposerDocument({ fiche, structureId, fichier, categorie, commentaire, onProgression: setProgression, canal: vers });
+      onEnvoye?.(fichier.name, destinataire);
     } catch (err) {
       const code = String(err?.code || '');
       setErreur(
-        code.includes('unauthorized') ? 'Envoi refusé. Contactez votre référent(e).'
+        code.includes('unauthorized') || code.includes('permission-denied') ? 'Envoi refusé. Contactez votre référent(e).'
           : code.includes('canceled') ? 'Envoi annulé.'
             : (err?.message && !code ? err.message : 'Le document n\'a pas pu être envoyé. Vérifiez votre connexion et réessayez.'),
       );
@@ -111,8 +114,16 @@ export default function FenetreDepot({ fiche, structureId, fichierInitial = null
                 {CATEGORIES_DEPOT.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
             </div>
+            {!canal ? (
+              <div className="form-field">
+                <label htmlFor="depot-vers">Pour qui ?</label>
+                <select id="depot-vers" value={vers} onChange={(e) => setVers(e.target.value)} disabled={enCours}>
+                  {CANAUX.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </select>
+              </div>
+            ) : null}
             <div className="form-field">
-              <label htmlFor="depot-commentaire">Message pour votre référent(e) <small>(facultatif)</small></label>
+              <label htmlFor="depot-commentaire">Message d'accompagnement <small>(facultatif)</small></label>
               <textarea id="depot-commentaire" rows={2} maxLength={500} value={commentaire} onChange={(e) => setCommentaire(e.target.value)} disabled={enCours} placeholder="Ex : ma nouvelle attestation CAF" />
             </div>
           </>
@@ -130,12 +141,12 @@ export default function FenetreDepot({ fiche, structureId, fichierInitial = null
         {fichier ? (
           <button type="button" className="btn btn-primary" onClick={envoyer} disabled={enCours || Boolean(verifierFichier(fichier))}>
             <Upload size={18} aria-hidden="true" style={{ verticalAlign: '-3px', marginRight: 6 }} />
-            {enCours ? 'Envoi…' : 'Envoyer à mon référent(e)'}
+            {enCours ? 'Envoi…' : `Envoyer ${destinataire.a}`}
           </button>
         ) : null}
 
         <p className="depot-aide" style={{ marginTop: 10 }}>
-          🔒 Le document est transmis uniquement à votre structure.
+          🔒 {destinataire.secret}
         </p>
       </div>
     </div>
